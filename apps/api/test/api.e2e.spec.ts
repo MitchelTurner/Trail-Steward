@@ -19,24 +19,35 @@ const federal = {
   landTypes: ['usfs'],
   stage: 'planned',
   match: 'yes',
+  federalFunding: 'no',
 };
 const tribal = {
   community: 'Kake',
   landTypes: ['tribal'],
   stage: 'idea',
   match: 'yes',
+  federalFunding: 'no',
 };
 const localNoMatch = {
   community: 'Juneau',
   landTypes: ['local'],
   stage: 'designed',
   match: 'no',
+  federalFunding: 'no',
 };
 const permitted = {
   community: 'Haines',
   landTypes: ['state-parks'],
   stage: 'permitted',
   match: 'yes',
+  federalFunding: 'no',
+};
+const cityFederal = {
+  community: 'Wrangell',
+  landTypes: ['local'],
+  stage: 'permitted',
+  match: 'yes',
+  federalFunding: 'yes',
 };
 
 async function signIn(app: INestApplication, email: string) {
@@ -229,6 +240,19 @@ describe('API', () => {
         keys: [
           'confirm-land',
           'approvals',
+          'maintenance-owner',
+          'pick-program',
+          'evidence',
+          'partners',
+          'apply',
+        ],
+      },
+      {
+        answers: cityFederal,
+        keys: [
+          'confirm-land',
+          'approvals',
+          'federal-review',
           'maintenance-owner',
           'pick-program',
           'evidence',

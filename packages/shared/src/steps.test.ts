@@ -23,6 +23,7 @@ const steps: FixtureStep[] = [
     any: [
       { q: 'landTypes', includes: 'usfs' },
       { q: 'landTypes', includes: 'nps' },
+      { q: 'federalFunding', in: ['yes', 'unknown'] },
     ],
   }),
   step('wetlands', 5, ['confirm-land'], { q: 'stage', in: ['idea', 'planned', 'designed'] }),
@@ -69,6 +70,7 @@ describe('funding pathway step selection', () => {
         landTypes: ['usfs'],
         stage: 'planned',
         match: 'yes',
+        federalFunding: 'no',
       }),
     ).toEqual([
       'confirm-land',
@@ -90,6 +92,7 @@ describe('funding pathway step selection', () => {
         landTypes: ['tribal'],
         stage: 'idea',
         match: 'yes',
+        federalFunding: 'no',
       }),
     ).toEqual([
       'confirm-land',
@@ -112,6 +115,7 @@ describe('funding pathway step selection', () => {
         landTypes: ['local'],
         stage: 'designed',
         match: 'no',
+        federalFunding: 'no',
       }),
     ).toEqual([
       'confirm-land',
@@ -126,6 +130,39 @@ describe('funding pathway step selection', () => {
     ]);
   });
 
+  it('includes federal review for a city trail that is asking for federal funding', () => {
+    expect(
+      keys({
+        community: 'Juneau',
+        landTypes: ['local'],
+        stage: 'permitted',
+        match: 'yes',
+        federalFunding: 'yes',
+      }),
+    ).toEqual([
+      'confirm-land',
+      'approvals',
+      'federal-review',
+      'maintenance-owner',
+      'pick-program',
+      'evidence',
+      'partners',
+      'apply',
+    ]);
+  });
+
+  it('includes federal review when federal funding is not sure yet', () => {
+    expect(
+      keys({
+        community: 'Ketchikan',
+        landTypes: ['local'],
+        stage: 'permitted',
+        match: 'yes',
+        federalFunding: 'unknown',
+      }),
+    ).toContain('federal-review');
+  });
+
   it('drops plan, wetlands, federal, tribal, and match steps when the project is permitted on a state park', () => {
     expect(
       keys({
@@ -133,6 +170,7 @@ describe('funding pathway step selection', () => {
         landTypes: ['state-parks'],
         stage: 'permitted',
         match: 'yes',
+        federalFunding: 'no',
       }),
     ).toEqual([
       'confirm-land',

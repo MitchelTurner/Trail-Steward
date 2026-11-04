@@ -1,7 +1,7 @@
 {
   "slug": "funding-application",
   "title": "Prepare a trail project for a funding application",
-  "summary": "Answer four questions and get an ordered checklist for a trail funding application in Southeast Alaska.",
+  "summary": "Answer five questions and get an ordered checklist for a trail funding application in Southeast Alaska.",
   "status": "DRAFT",
   "questions": [
     {
@@ -70,6 +70,16 @@
       "options": [
         { "value": "yes", "label": "Yes" },
         { "value": "partial", "label": "Some" },
+        { "value": "no", "label": "No" },
+        { "value": "unknown", "label": "Not sure" }
+      ]
+    },
+    {
+      "id": "federalFunding",
+      "type": "single",
+      "label": "Are you asking for federal funding?",
+      "options": [
+        { "value": "yes", "label": "Yes" },
         { "value": "no", "label": "No" },
         { "value": "unknown", "label": "Not sure" }
       ]
@@ -142,7 +152,8 @@
       "showIf": {
         "any": [
           { "q": "landTypes", "includes": "usfs" },
-          { "q": "landTypes", "includes": "nps" }
+          { "q": "landTypes", "includes": "nps" },
+          { "q": "federalFunding", "in": ["yes", "unknown"] }
         ]
       },
       "contactQuery": {

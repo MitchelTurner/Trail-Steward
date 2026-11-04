@@ -3,8 +3,8 @@ import path from 'node:path';
 import { Prisma, type PrismaClient } from '@prisma/client';
 import { contactQuerySchema, questionsSchema, type Question } from 'shared';
 
-// TODO(spec): federal-review should also show for federal funding. Intake does not ask that,
-// so the seeded step shows only when land includes the Forest Service or the National Park Service.
+// TODO(spec): "Not sure" on federal funding shows the federal review step, so that step is not skipped
+// when the funding source is still unknown. Forest Service and National Park Service land show it too.
 // TODO(spec): pick-program lists check-plan as a soft prerequisite. The schema only has
 // prerequisiteKeys, so it is stored as a normal prerequisite and ignored when that step is hidden.
 

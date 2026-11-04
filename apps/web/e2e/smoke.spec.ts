@@ -25,6 +25,9 @@ test('a checklist keeps two finished steps after reload', async ({ page }) => {
   await page.getByRole('radio', { name: 'In a community or agency plan' }).check();
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('radio', { name: 'Yes', exact: true }).check();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByText('Are you asking for federal funding?')).toBeVisible();
+  await page.getByRole('radio', { name: 'Yes', exact: true }).check();
   await page.getByRole('button', { name: 'See my checklist' }).click();
   await expect(page).toHaveURL(/\/c\//);
   const boxes = page.getByRole('checkbox');
