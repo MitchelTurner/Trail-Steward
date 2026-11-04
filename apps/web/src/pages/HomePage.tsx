@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
-import { api } from '../api';
+import { ApiError, api } from '../api';
 import type { TopicSummary } from '../types';
 import { TOPIC_COLORS, buttonClass, inputClass } from '../ui';
 
@@ -79,7 +79,12 @@ export function HomePage() {
         </section>
       ) : null}
       {topics.isLoading ? <p>Loading topics…</p> : null}
-      {topics.isError ? <p>Could not load topics.</p> : null}
+      {topics.isError ? (
+        <p>
+          Could not load topics.
+          {topics.error instanceof ApiError ? ` ${topics.error.message}` : ''}
+        </p>
+      ) : null}
       <ul className="grid gap-3 sm:grid-cols-2">
         {topics.data?.map((topic) => (
           <li key={topic.slug}>

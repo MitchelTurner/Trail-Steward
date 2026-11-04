@@ -23,7 +23,10 @@ export function configureHttp(app: INestApplication): void {
 
 async function bootstrap(): Promise<void> {
   try {
-    loadServerEnv();
+    const env = loadServerEnv();
+    process.env.DATABASE_URL = env.DATABASE_URL;
+    process.env.REDIS_URL = env.REDIS_URL;
+    process.env.TZ = env.TZ;
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
     process.exit(1);

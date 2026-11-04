@@ -33,6 +33,46 @@ describe('loadServerEnv', () => {
     expect(env.REDIS_URL).toBe('redis://default:secret%2Fpass@redis.railway.internal:6379');
   });
 
+  it('on Railway, skips a localhost database URL and the example app URLs', () => {
+    const env = loadServerEnv({
+      ...base,
+      RAILWAY_ENVIRONMENT: 'production',
+      RAILWAY_PUBLIC_DOMAIN: 'web-production-471f.up.railway.app',
+      DATABASE_URL: 'postgresql://trail:trail@localhost:5432/trail_steward',
+      DATABASE_PRIVATE_URL: 'postgresql://postgres:secret@postgres.railway.internal:5432/railway',
+      REDIS_URL: 'redis://redis:6379',
+    });
+    expect(env.DATABASE_URL).toBe('postgresql://postgres:secret@postgres.railway.internal:5432/railway');
+    expect(env.APP_BASE_URL).toBe('https://web-production-471f.up.railway.app');
+    expect(env.API_BASE_URL).toBe('https://web-production-471f.up.railway.app');
+  });
+
+  it('turns on SSL for a Railway public database proxy', () => {
+    const env = loadServerEnv({
+      ...base,
+      DATABASE_URL: 'postgresql://postgres:secret@roundhouse.proxy.rlwy.net:12345/railway',
+      REDIS_URL: 'redis://redis:6379',
+    });
+    expect(env.DATABASE_URL).toBe(
+      'postgresql://postgres:secret@roundhouse.proxy.rlwy.net:12345/railway?sslmode=require',
+    );
+  });
+
+  it('builds a database URL from Railway host variables', () => {
+    const env = loadServerEnv({
+      ...base,
+      PGHOST: 'postgres.railway.internal',
+      PGPORT: '5432',
+      PGUSER: 'postgres',
+      PGPASSWORD: 'secret/pass',
+      PGDATABASE: 'railway',
+      REDIS_URL: 'redis://redis:6379',
+    });
+    expect(env.DATABASE_URL).toBe(
+      'postgresql://postgres:secret%2Fpass@postgres.railway.internal:5432/railway',
+    );
+  });
+
   it('fills test settings when the service variables are unset', () => {
     const env = loadServerEnv({
       DATABASE_URL: 'postgresql://db/trail',

@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { loadServerEnv } from 'shared';
 import { chooseUpstream, trailApiReady } from './api-upstream.mjs';
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -34,7 +35,15 @@ async function waitForApi(child) {
 
 async function startLocalApi() {
   const env = { ...process.env, PORT: '3000' };
-  if (!env.DATABASE_URL && env.DATABASE_PRIVATE_URL) env.DATABASE_URL = env.DATABASE_PRIVATE_URL;
+  try {
+    const resolved = loadServerEnv(env);
+    env.DATABASE_URL = resolved.DATABASE_URL;
+    env.REDIS_URL = resolved.REDIS_URL;
+    env.TZ = resolved.TZ;
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    return false;
+  }
   if (!databaseUrl(env)) {
     console.error('The map API was not started: DATABASE_URL is not set on the web service.');
     return false;

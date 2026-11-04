@@ -13,11 +13,14 @@ export class HealthController {
   @Get()
   async health(@Res({ passthrough: true }) res: Response) {
     let db: 'ok' | 'error' = 'ok';
+    let dbReason: string | undefined;
     let redisStatus: 'ok' | 'error' = 'ok';
     try {
       await this.prisma.$queryRaw`SELECT 1`;
-    } catch {
+    } catch (error) {
       db = 'error';
+      dbReason = databaseProblem(error);
+      console.error(`Database check failed: ${dbReason}`);
     }
     try {
       const pong = await this.redis.ping();
@@ -27,8 +30,21 @@ export class HealthController {
     }
     const status = db === 'ok' && redisStatus === 'ok' ? 'ok' : 'error';
     res.status(status === 'ok' ? 200 : 503);
-    return { status, db, redis: redisStatus };
+    return { status, db, redis: redisStatus, ...(dbReason ? { dbReason } : {}) };
   }
+}
+
+function databaseProblem(error: unknown): string {
+  const code =
+    error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
+      ? error.code
+      : '';
+  const message = error instanceof Error ? error.message : 'Database query failed';
+  const clean = message
+    .replace(/postgres(?:ql)?:\/\/\S+/gi, 'postgresql://redacted')
+    .replace(/\s+/g, ' ')
+    .slice(0, 180);
+  return code ? `${code}: ${clean}` : clean;
 }
 
 @Module({ controllers: [HealthController] })

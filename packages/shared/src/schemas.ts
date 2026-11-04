@@ -345,6 +345,74 @@ function present(value: string | undefined): string | undefined {
   return value && value.length > 0 ? value : undefined;
 }
 
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '::1']);
+
+function onRailway(source: NodeJS.ProcessEnv): boolean {
+  return Boolean(
+    present(source.RAILWAY_ENVIRONMENT) ||
+      present(source.RAILWAY_PROJECT_ID) ||
+      present(source.RAILWAY_PUBLIC_DOMAIN),
+  );
+}
+
+function hostnameOf(value: string): string | undefined {
+  try {
+    return new URL(value).hostname.replace(/^\[|\]$/g, '');
+  } catch {
+    return undefined;
+  }
+}
+
+function isLoopbackHost(host: string | undefined): boolean {
+  return Boolean(host && LOOPBACK_HOSTS.has(host));
+}
+
+function isLoopbackUrl(value: string): boolean {
+  return isLoopbackHost(hostnameOf(value));
+}
+
+function railwayDatabaseUrl(url: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return url;
+  }
+  let changed = false;
+  const host = parsed.hostname;
+  if ((host.endsWith('.rlwy.net') || host.endsWith('.up.railway.app')) && !parsed.searchParams.has('sslmode')) {
+    parsed.searchParams.set('sslmode', 'require');
+    changed = true;
+  }
+  if ((parsed.port === '6543' || host.includes('pooler')) && !parsed.searchParams.has('pgbouncer')) {
+    parsed.searchParams.set('pgbouncer', 'true');
+    changed = true;
+  }
+  return changed ? parsed.toString() : url;
+}
+
+export function databaseUrlFrom(source: NodeJS.ProcessEnv): string | undefined {
+  const railway = onRailway(source);
+  const listed = [
+    present(source.DATABASE_URL),
+    present(source.DATABASE_PRIVATE_URL),
+    present(source.POSTGRES_URL),
+    present(source.DATABASE_PUBLIC_URL),
+  ].filter((value): value is string => Boolean(value));
+  const chosen = (railway ? listed.find((url) => !isLoopbackUrl(url)) : undefined) ?? listed[0];
+  if (chosen) return railwayDatabaseUrl(chosen);
+  const host = present(source.PGHOST);
+  if (!host || (railway && isLoopbackHost(host))) return undefined;
+  const user = present(source.PGUSER) || 'postgres';
+  const password = present(source.PGPASSWORD);
+  const auth = password
+    ? `${encodeURIComponent(user)}:${encodeURIComponent(password)}`
+    : encodeURIComponent(user);
+  const port = present(source.PGPORT) || '5432';
+  const database = present(source.PGDATABASE) || 'railway';
+  return railwayDatabaseUrl(`postgresql://${auth}@${host}:${port}/${database}`);
+}
+
 function redisUrlFrom(source: NodeJS.ProcessEnv): string | undefined {
   const direct = present(source.REDIS_URL) || present(source.REDIS_PRIVATE_URL) || present(source.REDIS_PUBLIC_URL);
   if (direct) return direct;
@@ -380,12 +448,15 @@ const envHints: Record<string, string> = {
 
 export function loadServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv {
   const publicUrl = railwayPublicUrl(source);
+  const railway = onRailway(source);
+  const appBase = present(source.APP_BASE_URL);
+  const apiBase = present(source.API_BASE_URL);
   const filled = {
     JWT_SECRET: present(source.JWT_SECRET) || TEST_JWT_SECRET,
     RESEND_API_KEY: present(source.RESEND_API_KEY) || TEST_RESEND_API_KEY,
     EMAIL_FROM: present(source.EMAIL_FROM) || TEST_EMAIL_FROM,
-    APP_BASE_URL: present(source.APP_BASE_URL) || publicUrl || 'http://localhost:5173',
-    API_BASE_URL: present(source.API_BASE_URL) || publicUrl || 'http://localhost:3000',
+    APP_BASE_URL: (appBase && !(railway && isLoopbackUrl(appBase)) ? appBase : undefined) || publicUrl || 'http://localhost:5173',
+    API_BASE_URL: (apiBase && !(railway && isLoopbackUrl(apiBase)) ? apiBase : undefined) || publicUrl || 'http://localhost:3000',
   };
   const defaults = (Object.keys(filled) as (keyof typeof filled)[]).filter((key) => !present(source[key]));
   if (defaults.length > 0) {
@@ -394,7 +465,7 @@ export function loadServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEn
   const env: NodeJS.ProcessEnv = {
     ...source,
     ...filled,
-    DATABASE_URL: present(source.DATABASE_URL) || present(source.DATABASE_PRIVATE_URL),
+    DATABASE_URL: databaseUrlFrom(source),
     REDIS_URL: redisUrlFrom(source),
     TZ: present(source.TZ) || 'America/Anchorage',
   };
