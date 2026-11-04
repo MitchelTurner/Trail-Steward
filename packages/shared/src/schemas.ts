@@ -251,6 +251,17 @@ function redisUrlFrom(source: NodeJS.ProcessEnv): string | undefined {
   return `redis://${auth}${host}:${port}`;
 }
 
+// TODO(spec): these let a Railway service boot before the real variables are set.
+const TEST_JWT_SECRET = 'trail-steward-test-secret';
+const TEST_RESEND_API_KEY = 're_test';
+const TEST_EMAIL_FROM = 'Trail Steward <noreply@example.com>';
+
+function railwayPublicUrl(source: NodeJS.ProcessEnv): string | undefined {
+  const domain = present(source.RAILWAY_PUBLIC_DOMAIN);
+  if (domain) return `https://${domain}`;
+  return present(source.RAILWAY_STATIC_URL);
+}
+
 const envHints: Record<string, string> = {
   DATABASE_URL: 'Add a variable reference to the Postgres service DATABASE_URL.',
   REDIS_URL: 'Add a variable reference to the Redis service REDIS_URL.',
@@ -262,8 +273,21 @@ const envHints: Record<string, string> = {
 };
 
 export function loadServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv {
+  const publicUrl = railwayPublicUrl(source);
+  const filled = {
+    JWT_SECRET: present(source.JWT_SECRET) || TEST_JWT_SECRET,
+    RESEND_API_KEY: present(source.RESEND_API_KEY) || TEST_RESEND_API_KEY,
+    EMAIL_FROM: present(source.EMAIL_FROM) || TEST_EMAIL_FROM,
+    APP_BASE_URL: present(source.APP_BASE_URL) || publicUrl || 'http://localhost:5173',
+    API_BASE_URL: present(source.API_BASE_URL) || publicUrl || 'http://localhost:3000',
+  };
+  const defaults = (Object.keys(filled) as (keyof typeof filled)[]).filter((key) => !present(source[key]));
+  if (defaults.length > 0) {
+    console.warn(`Using test settings for ${defaults.join(', ')}. Replace them on the service before real use.`);
+  }
   const env: NodeJS.ProcessEnv = {
     ...source,
+    ...filled,
     DATABASE_URL: present(source.DATABASE_URL) || present(source.DATABASE_PRIVATE_URL),
     REDIS_URL: redisUrlFrom(source),
     TZ: present(source.TZ) || 'America/Anchorage',

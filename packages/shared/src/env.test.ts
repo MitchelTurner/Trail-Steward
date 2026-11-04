@@ -32,4 +32,17 @@ describe('loadServerEnv', () => {
     });
     expect(env.REDIS_URL).toBe('redis://default:secret%2Fpass@redis.railway.internal:6379');
   });
+
+  it('fills test settings when the service variables are unset', () => {
+    const env = loadServerEnv({
+      DATABASE_URL: 'postgresql://db/trail',
+      REDIS_URL: 'redis://redis:6379',
+      RAILWAY_PUBLIC_DOMAIN: 'api.up.railway.app',
+    });
+    expect(env.JWT_SECRET).toBe('trail-steward-test-secret');
+    expect(env.RESEND_API_KEY).toBe('re_test');
+    expect(env.EMAIL_FROM).toBe('Trail Steward <noreply@example.com>');
+    expect(env.APP_BASE_URL).toBe('https://api.up.railway.app');
+    expect(env.API_BASE_URL).toBe('https://api.up.railway.app');
+  });
 });
