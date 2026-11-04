@@ -11,6 +11,7 @@ import { AuthModule } from './modules/auth.module';
 import { ChecklistsModule } from './modules/checklists.module';
 import { HealthModule } from './modules/health.module';
 import { IssuesModule } from './modules/issues.module';
+import { MaintenanceModule } from './modules/maintenance.module';
 import { OrganizationsModule } from './modules/organizations.module';
 import { PathwaysModule } from './modules/pathways.module';
 import { PlayersModule } from './modules/players.module';
@@ -78,6 +79,7 @@ export class CoreModule {}
     PathwaysModule,
     TrailsModule,
     IssuesModule,
+    MaintenanceModule,
     ChecklistsModule,
     SuggestionsModule,
     AuthModule,
@@ -94,4 +96,4 @@ export class CoreModule {}
 })
 export class AppModule {}
 
-// Later reserved module names: change-requests, workdays.
+// Later: trail counters. File storage is still not in this app.

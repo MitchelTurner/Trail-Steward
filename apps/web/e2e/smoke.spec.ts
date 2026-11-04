@@ -50,10 +50,14 @@ test('the map opens a trail and takes a problem report', async ({ page }) => {
   await page.getByRole('listitem').getByRole('link', { name: 'Harbor path' }).click();
   await expect(page.getByRole('heading', { name: 'Harbor path' })).toBeVisible();
   await expect(page.getByText('Harbor bridge · Bridge')).toBeVisible();
+  await expect(page.getByText('November 18, 2026 — Harbor cleanup')).toBeVisible();
   await page.getByLabel('Short title').fill('Washout');
   await page.getByLabel('What is wrong').fill('The bridge approach is gone.');
   await page.getByRole('button', { name: 'Send report' }).click();
   await expect(page.getByText('Thanks. An editor will see this on the review board.')).toBeVisible();
+  await page.getByLabel('What should change').fill('The line should follow the dock.');
+  await page.getByRole('button', { name: 'Send request' }).click();
+  await expect(page.getByText('Thanks. An editor will see this request.')).toBeVisible();
   const fits = await page.evaluate(
     () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
   );
@@ -68,6 +72,14 @@ test('an editor publishes a trail from the form', async ({ page }) => {
   await page.goto('/admin/issues');
   await expect(page.getByRole('heading', { name: 'Issues' })).toBeVisible();
   await expect(page.getByText('Washout · Open').first()).toBeVisible();
+  await page.goto('/admin/board');
+  await expect(page.getByRole('heading', { name: 'Maintenance board' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Harbor path' })).toBeVisible();
+  const packet = await page.request.get('/api/trails/harbor-path/packet');
+  expect(packet.ok()).toBeTruthy();
+  expect(packet.headers()['content-type']).toContain('application/pdf');
+  await page.goto('/admin/changes');
+  await expect(page.getByText('The line should follow the dock.').first()).toBeVisible();
   await page.goto('/admin/trails/new');
   await page.getByLabel('Name').fill('Playwright creek');
   await page.getByLabel(/^Line/).fill('-135.40, 57.10\n-135.35, 57.12');

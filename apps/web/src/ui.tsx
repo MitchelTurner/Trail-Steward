@@ -87,6 +87,16 @@ export function WrongLink({ type, id }: { type: string; id?: string }) {
   );
 }
 
+export function formatDay(value: string): string {
+  const [year, month, day] = value.slice(0, 10).split('-').map(Number);
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date(Date.UTC(year, month - 1, day)));
+}
+
 export function kindLabel(kind: string): string {
   if ((orgKinds as readonly string[]).includes(kind)) {
     return ORG_KIND_LABELS[kind as (typeof orgKinds)[number]];

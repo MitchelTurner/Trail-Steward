@@ -77,7 +77,8 @@ export class ReviewService {
   }
 
   async dashboard() {
-    const [orgs, roles, resources, pathways, trails, assets, issues, metrics] = await Promise.all([
+    const [orgs, roles, resources, pathways, trails, assets, issues, changes, metrics] =
+      await Promise.all([
       this.prisma.organization.findMany({
         include: { maintainer: true },
         orderBy: { name: 'asc' },
@@ -95,6 +96,11 @@ export class ReviewService {
       }),
       this.prisma.issue.findMany({
         where: { ownerOrgId: null, status: 'OPEN' },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.changeRequest.findMany({
+        where: { status: 'OPEN' },
+        include: { trail: true },
         orderBy: { createdAt: 'desc' },
       }),
       this.metrics(),
@@ -186,9 +192,26 @@ export class ReviewService {
           maintainerName: null,
         })),
       ),
+      {
+        key: 'changeRequests',
+        title: 'Map change requests',
+        kind: 'queue' as const,
+        counts: {
+          stale: 0,
+          due: 0,
+          neverReviewed: changes.length,
+          unassigned: 0,
+        },
+        items: changes.map((change) => ({
+          entityType: 'changeRequest' as const,
+          id: change.id,
+          label: `${change.trail.name} — ${change.message}`,
+          freshness: 'never-reviewed' as const,
+          maintainerId: null,
+          maintainerName: null,
+        })),
+      },
     ];
-
-    // Change requests can be appended as another section.
     return {
       sections,
       brokenLinks: resources

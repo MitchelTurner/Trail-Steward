@@ -178,6 +178,7 @@ export type Dashboard = {
   sections: {
     key: string;
     title: string;
+    kind?: 'queue';
     counts: { stale: number; due: number; neverReviewed: number; unassigned: number };
     items: {
       entityType: string;

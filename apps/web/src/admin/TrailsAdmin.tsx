@@ -6,7 +6,7 @@ import { ASSET_KIND_LABELS, assetKinds, contentStatuses, visibilities } from 'sh
 import { api, ApiError } from '../api';
 import type { MapLine, MapPoint } from '../features/map/TrailMap';
 import type { OrgListItem, Page } from '../types';
-import { Field, buttonClass, inputClass } from '../ui';
+import { Field, buttonClass, formatDay, inputClass } from '../ui';
 
 type TrailRow = {
   id: string;
@@ -24,6 +24,14 @@ type TrailRow = {
     kind: string;
     notes: string | null;
     point: MapPoint | null;
+  }[];
+  workdays: {
+    id: string;
+    title: string;
+    notes: string | null;
+    workDate: string;
+    status: string;
+    hostOrg: { name: string } | null;
   }[];
 };
 
@@ -226,6 +234,14 @@ export function TrailForm() {
       </form>
       {data ? <AssetEditor slug={data.slug} assets={data.assets} /> : null}
       {data ? (
+        <WorkdayEditor slug={data.slug} workdays={data.workdays} orgs={orgs.data?.items ?? []} />
+      ) : null}
+      {data ? (
+        <a className={buttonClass('quiet')} href={`/api/trails/${data.slug}/packet`}>
+          Download work list
+        </a>
+      ) : null}
+      {data ? (
         <button
           className={buttonClass('quiet')}
           type="button"
@@ -319,6 +335,105 @@ function AssetEditor({ slug, assets }: { slug: string; assets: TrailRow['assets'
         {error ? <p className="text-stale">{error}</p> : null}
         <button className={buttonClass('quiet')} type="submit" disabled={add.isPending}>
           Add place
+        </button>
+      </form>
+    </section>
+  );
+}
+
+function WorkdayEditor({
+  slug,
+  workdays,
+  orgs,
+}: {
+  slug: string;
+  workdays: TrailRow['workdays'];
+  orgs: { id: string; name: string }[];
+}) {
+  const client = useQueryClient();
+  const [error, setError] = useState('');
+  const add = useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      api(`/api/trails/${slug}/workdays`, { method: 'POST', body: JSON.stringify(body) }),
+    onSuccess: async () => {
+      setError('');
+      await client.invalidateQueries({ queryKey: ['trail', 'manage', slug] });
+      await client.invalidateQueries({ queryKey: ['maintenance-board'] });
+    },
+    onError: (err: unknown) => {
+      setError(err instanceof ApiError ? err.message : 'Could not add that work day.');
+    },
+  });
+  const markDone = useMutation({
+    mutationFn: (id: string) =>
+      api(`/api/trails/${slug}/workdays/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'DONE' }),
+      }),
+    onSuccess: async () => {
+      await client.invalidateQueries({ queryKey: ['trail', 'manage', slug] });
+      await client.invalidateQueries({ queryKey: ['maintenance-board'] });
+    },
+  });
+
+  function onAdd(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const host = String(data.get('hostOrgId') ?? '');
+    add.mutate(
+      {
+        title: String(data.get('title') ?? ''),
+        workDate: String(data.get('workDate') ?? ''),
+        notes: String(data.get('notes') ?? ''),
+        hostOrgId: host || null,
+      },
+      { onSuccess: () => form.reset() },
+    );
+  }
+
+  return (
+    <section className="space-y-3">
+      <h3 className="font-semibold text-navy">Work days</h3>
+      <ul className="space-y-2">
+        {workdays.map((day) => (
+          <li key={day.id} className="flex flex-wrap items-center justify-between gap-2">
+            <span>
+              {formatDay(day.workDate)} — {day.title}
+              {day.status === 'PLANNED' ? '' : ` · ${day.status === 'DONE' ? 'Done' : 'Canceled'}`}
+              {day.hostOrg ? ` · ${day.hostOrg.name}` : ''}
+            </span>
+            {day.status === 'PLANNED' ? (
+              <button className={buttonClass('quiet')} type="button" onClick={() => markDone.mutate(day.id)}>
+                Mark done
+              </button>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      <form className="max-w-xl space-y-3" onSubmit={onAdd}>
+        <Field label="Work day title">
+          <input className={inputClass} name="title" required />
+        </Field>
+        <Field label="Date">
+          <input className={inputClass} name="workDate" type="date" required />
+        </Field>
+        <Field label="Work notes">
+          <input className={inputClass} name="notes" />
+        </Field>
+        <Field label="Host">
+          <select className={inputClass} name="hostOrgId" defaultValue="">
+            <option value="">None yet</option>
+            {orgs.map((org) => (
+              <option key={org.id} value={org.id}>
+                {org.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        {error ? <p className="text-stale">{error}</p> : null}
+        <button className={buttonClass('quiet')} type="submit" disabled={add.isPending}>
+          Add work day
         </button>
       </form>
     </section>

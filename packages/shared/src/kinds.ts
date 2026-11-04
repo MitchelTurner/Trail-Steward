@@ -22,6 +22,8 @@ export const suggestionStatuses = ['OPEN', 'ACCEPTED', 'REJECTED'] as const;
 export const visibilities = ['PUBLIC', 'PARTNERS', 'PRIVATE'] as const;
 export const assetKinds = ['TRAILHEAD', 'BRIDGE', 'CULVERT', 'SIGN', 'OTHER'] as const;
 export const issueStatuses = ['OPEN', 'CLOSED'] as const;
+export const workdayStatuses = ['PLANNED', 'DONE', 'CANCELED'] as const;
+export const changeRequestStatuses = ['OPEN', 'ACCEPTED', 'REJECTED'] as const;
 
 export const ASSET_KIND_LABELS: Record<(typeof assetKinds)[number], string> = {
   TRAILHEAD: 'Trailhead',

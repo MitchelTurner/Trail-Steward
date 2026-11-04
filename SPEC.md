@@ -1,6 +1,6 @@
 # Trail Steward
 
-Phase 1 is the planning navigator. Phase 2 adds the trail map: a trail line, places on that line, and a public report when something is wrong. Counters, workdays, repair packets, change requests, and file storage are still later. The design doc did not spell those out, so they are not invented here.
+Phase 1 is the planning navigator. Phase 2 adds the trail map. Phase 3 is the maintenance board: planned work days, requests to change the map, and a PDF work list for one trail. Trail counters and file storage are still later. The design doc did not spell the board out, so this is the smallest version that fits the reserved names.
 
 `Organization` stays the owner directory. A trail points at it with `dataStewardOrgId` and `maintenanceOwnerOrgId`. `freshness()` covers trails and places. The review dashboard adds sections for trails, map points, and issues that have no owner.
 
@@ -9,6 +9,14 @@ Phase 1 is the planning navigator. Phase 2 adds the trail map: a trail line, pla
 A trail is a line of longitude, latitude pairs. A place on a trail is a point: trailhead, bridge, culvert, sign, or other. PostGIS stores the same shape so the map can ask which trails cross a box. The public map is a drawing of those lines, not a street basemap.
 
 Published public trails show on `/map` and `/trails/:slug`. Drafts stay in the editor. Anyone can report a problem. The report lands as an unowned issue until an editor names an organization or closes it.
+
+## Maintenance board
+
+A work day is a date, a title, and an optional host from the directory. Planned days show on the trail page. Marking a day done takes it off that public list.
+
+A map change request is a note that the line, the name, or the owner is wrong. Accepting it does not move the line. The editor still edits the trail.
+
+The maintenance board lists trails that have an open problem, a planned work day, or an open map change. Download work list makes a PDF of that snapshot. It is not stored. Counters are not on this board yet.
 
 ## What it does
 

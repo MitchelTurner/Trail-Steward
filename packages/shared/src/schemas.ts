@@ -1,18 +1,28 @@
 import { z } from 'zod';
 import { lineStringSchema, pointSchema } from './geo';
-import { assetKinds, contentStatuses, orgKinds, userRoles, visibilities } from './kinds';
+import {
+  assetKinds,
+  changeRequestStatuses,
+  contentStatuses,
+  orgKinds,
+  userRoles,
+  visibilities,
+  workdayStatuses,
+} from './kinds';
 
 export {
   ASSET_KIND_LABELS,
   ORG_KIND_LABELS,
   assetKinds,
   contentStatuses,
+  changeRequestStatuses,
   issueStatuses,
   linkStatuses,
   orgKinds,
   suggestionStatuses,
   userRoles,
   visibilities,
+  workdayStatuses,
 } from './kinds';
 
 export const pageQuerySchema = z.object({
@@ -163,6 +173,37 @@ export const issueCreateSchema = z.object({
 
 export const issueOwnerSchema = z.object({
   organizationId: z.string().nullable(),
+});
+
+const calendarDay = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((value) => {
+    const [year, month, day] = value.split('-').map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+  }, 'Enter a real date.');
+
+export const workdayWriteSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  notes: z.string().trim().max(4000).optional(),
+  workDate: calendarDay,
+  status: z.enum(workdayStatuses).optional(),
+  hostOrgId: z.string().nullable().optional(),
+});
+
+export const changeRequestCreateSchema = z.object({
+  message: z.string().trim().min(1).max(4000),
+  submitterName: z.string().trim().max(200).optional(),
+  fax: z.string().optional(),
+});
+
+export const changeRequestResolveSchema = z.object({
+  status: z.enum(['ACCEPTED', 'REJECTED'] satisfies [
+    (typeof changeRequestStatuses)[number],
+    (typeof changeRequestStatuses)[number],
+  ]),
+  resolutionNote: z.string().trim().max(2000).optional(),
 });
 
 export const magicLinkSchema = z.object({

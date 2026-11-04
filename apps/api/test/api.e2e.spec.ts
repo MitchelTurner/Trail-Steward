@@ -61,6 +61,8 @@ describe('API', () => {
     prisma = new PrismaClient();
     await prisma.$executeRawUnsafe(`
       TRUNCATE TABLE
+        "ChangeRequest",
+        "Workday",
         "Issue",
         "Asset",
         "Trail",
@@ -463,5 +465,56 @@ describe('API', () => {
       (section: { key: string }) => section.key === 'issues',
     );
     expect(issues.items.some((item: { label: string }) => item.label === 'Washout')).toBe(true);
+  });
+
+  it('plans a work day, lists a map change, and downloads the work list', async () => {
+    const created = await editor
+      .post('/api/trails/harbor-path/workdays')
+      .send({ title: 'Harbor cleanup', workDate: '2026-11-18', notes: 'Bring gloves.' })
+      .expect(201);
+    const pub = await request(app.getHttpServer()).get('/api/trails/harbor-path').expect(200);
+    expect(pub.body.workdays.some((item: { title: string }) => item.title === 'Harbor cleanup')).toBe(
+      true,
+    );
+    await editor
+      .patch(`/api/trails/harbor-path/workdays/${created.body.id}`)
+      .send({ status: 'DONE' })
+      .expect(200);
+    const hidden = await request(app.getHttpServer()).get('/api/trails/harbor-path').expect(200);
+    expect(hidden.body.workdays.some((item: { title: string }) => item.title === 'Harbor cleanup')).toBe(
+      false,
+    );
+    await request(app.getHttpServer())
+      .post('/api/trails/harbor-path/change-requests')
+      .send({ message: 'The line should follow the dock.' })
+      .expect(201);
+    const dashboard = await coordinator.get('/api/review/dashboard').expect(200);
+    const section = dashboard.body.sections.find(
+      (item: { key: string }) => item.key === 'changeRequests',
+    );
+    expect(section.kind).toBe('queue');
+    expect(
+      section.items.some((item: { label: string }) => item.label.includes('follow the dock')),
+    ).toBe(true);
+    const board = await editor.get('/api/maintenance/board').expect(200);
+    expect(board.body.trails.some((item: { slug: string }) => item.slug === 'harbor-path')).toBe(true);
+    const packet = await editor
+      .get('/api/trails/harbor-path/packet')
+      .buffer(true)
+      .parse((res, callback) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+        res.on('end', () => callback(null, Buffer.concat(chunks)));
+      })
+      .expect(200);
+    expect(packet.headers['content-type']).toContain('application/pdf');
+    const dir = await mkdtemp(path.join(tmpdir(), 'ts-work-list-'));
+    const file = path.join(dir, 'work-list.pdf');
+    await writeFile(file, packet.body as Buffer);
+    const { stdout } = await execFileAsync('pdftotext', [file, '-']);
+    expect(stdout).toContain('Harbor path work list');
+    expect(stdout).toContain('Washout');
+    expect(stdout).toContain('follow the dock');
+    await rm(dir, { recursive: true, force: true });
   });
 });

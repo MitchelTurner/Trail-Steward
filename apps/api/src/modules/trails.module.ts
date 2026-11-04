@@ -27,6 +27,10 @@ const trailInclude = {
   dataSteward: { select: { slug: true, name: true } },
   maintenanceOwner: { select: { slug: true, name: true } },
   assets: { include: { maintainer: true }, orderBy: { name: 'asc' } },
+  workdays: {
+    include: { hostOrg: { select: { slug: true, name: true } } },
+    orderBy: { workDate: 'asc' as const },
+  },
 } satisfies Prisma.TrailInclude;
 
 type TrailRow = Prisma.TrailGetPayload<{ include: typeof trailInclude }>;
@@ -57,6 +61,16 @@ function presentTrail(trail: TrailRow, detailed: boolean) {
           maintenanceOwnerOrgId: trail.maintenanceOwnerOrgId,
         }
       : {}),
+    workdays: trail.workdays
+      .filter((day) => detailed || day.status === 'PLANNED')
+      .map((day) => ({
+        id: day.id,
+        title: day.title,
+        notes: day.notes,
+        workDate: day.workDate.toISOString().slice(0, 10),
+        status: day.status,
+        hostOrg: day.hostOrg,
+      })),
     assets: trail.assets.map((asset) => ({
       id: asset.id,
       name: asset.name,

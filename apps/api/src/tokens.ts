@@ -30,6 +30,8 @@ const test = process.env.NODE_ENV === 'test';
 export const LIMITS = {
   suggestions: test ? 10_000 : 5,
   issues: test ? 10_000 : 5,
+  changeRequests: test ? 10_000 : 5,
+  packet: test ? 10_000 : 30,
   auth: test ? 10_000 : 10,
   checklistCreate: test ? 10_000 : 30,
   checklistPatch: test ? 10_000 : 600,

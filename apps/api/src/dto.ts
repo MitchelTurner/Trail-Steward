@@ -14,6 +14,9 @@ import {
   roleWriteSchema,
   stepWriteSchema,
   assetWriteSchema,
+  changeRequestCreateSchema,
+  changeRequestResolveSchema,
+  changeRequestStatuses,
   issueCreateSchema,
   issueOwnerSchema,
   issueStatuses,
@@ -24,6 +27,7 @@ import {
   userPatchSchema,
   userWriteSchema,
   verifySchema,
+  workdayWriteSchema,
 } from 'shared';
 
 const scope = z.enum(['public', 'manage']).optional();
@@ -95,3 +99,12 @@ export class IssueListDto extends createZodDto(
   }),
 ) {}
 export class IssueOwnerDto extends createZodDto(issueOwnerSchema) {}
+export class WorkdayWriteDto extends createZodDto(workdayWriteSchema) {}
+export class WorkdayPatchDto extends createZodDto(workdayWriteSchema.partial()) {}
+export class ChangeRequestCreateDto extends createZodDto(changeRequestCreateSchema) {}
+export class ChangeRequestResolveDto extends createZodDto(changeRequestResolveSchema) {}
+export class ChangeRequestListDto extends createZodDto(
+  pageQuerySchema.extend({
+    status: z.enum(changeRequestStatuses).optional(),
+  }),
+) {}

@@ -57,6 +57,23 @@ INSERT INTO "Asset" (
 UPDATE "Asset"
 SET geom = ST_SetSRID(ST_GeomFromGeoJSON(point::text), 4326)::geometry(Point, 4326)
 WHERE id = 'seedassetharbor';
+INSERT INTO "Workday" (id, "trailId", title, notes, "workDate", status, "createdAt", "updatedAt")
+VALUES (
+  'seedworkharbor',
+  (SELECT id FROM "Trail" WHERE slug = 'harbor-path'),
+  'Harbor cleanup',
+  'Bring gloves.',
+  DATE '2026-11-18',
+  'PLANNED',
+  NOW(),
+  NOW()
+)
+ON CONFLICT (id) DO UPDATE SET
+  title = EXCLUDED.title,
+  notes = EXCLUDED.notes,
+  "workDate" = EXCLUDED."workDate",
+  status = EXCLUDED.status,
+  "updatedAt" = NOW();
 INSERT INTO "User" (id, email, name, role, "isActive", "createdAt")
 VALUES ('seedmapeditor', 'map-editor@example.com', 'Map editor', 'EDITOR', true, NOW())
 ON CONFLICT (email) DO NOTHING;

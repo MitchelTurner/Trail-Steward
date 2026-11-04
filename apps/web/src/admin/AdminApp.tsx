@@ -11,6 +11,8 @@ import type {
   SessionUser,
   SuggestionRow,
 } from '../types';
+import { BoardAdmin } from './BoardAdmin';
+import { ChangeRequestsAdmin } from './ChangeRequestsAdmin';
 import { IssuesAdmin } from './IssuesAdmin';
 import { TrailForm, TrailsAdmin } from './TrailsAdmin';
 import { FreshnessBadge, Field, buttonClass, inputClass, kindLabel } from '../ui';
@@ -39,8 +41,10 @@ function Shell({ children }: { children: ReactNode }) {
         <NavLink to="/admin/orgs">Organizations</NavLink>
         <NavLink to="/admin/roles">Roles</NavLink>
         <NavLink to="/admin/resources">Resources</NavLink>
+        <NavLink to="/admin/board">Board</NavLink>
         <NavLink to="/admin/trails">Trails</NavLink>
         <NavLink to="/admin/issues">Issues</NavLink>
+        <NavLink to="/admin/changes">Map changes</NavLink>
         <NavLink to="/admin/pathways/funding-application">Pathway</NavLink>
         <NavLink to="/admin/suggestions">Suggestions</NavLink>
         {role === 'COORDINATOR' || role === 'ADMIN' ? (
@@ -83,15 +87,25 @@ function DashboardPage() {
       {data.sections.map((section) => (
         <section key={section.key}>
           <h2 className="font-semibold text-navy">{section.title}</h2>
-          <p className="text-sm">
-            Needs review {section.counts.stale} · Review due {section.counts.due} · Not yet reviewed{' '}
-            {section.counts.neverReviewed} · No maintainer {section.counts.unassigned}
-          </p>
+          {section.kind === 'queue' ? (
+            <p className="text-sm">Open {section.items.length}</p>
+          ) : (
+            <p className="text-sm">
+              Needs review {section.counts.stale} · Review due {section.counts.due} · Not yet
+              reviewed {section.counts.neverReviewed} · No maintainer {section.counts.unassigned}
+            </p>
+          )}
           <ul className="mt-2 space-y-1 text-sm">
             {section.items.slice(0, 30).map((item) => (
               <li key={item.id}>
-                {item.label} — {item.freshness}
-                {item.maintainerName ? ` · ${item.maintainerName}` : ' · No maintainer'}
+                {section.kind === 'queue' ? (
+                  item.label
+                ) : (
+                  <>
+                    {item.label} — {item.freshness}
+                    {item.maintainerName ? ` · ${item.maintainerName}` : ' · No maintainer'}
+                  </>
+                )}
               </li>
             ))}
           </ul>
@@ -1051,10 +1065,12 @@ export function AdminApp() {
         <Route path="roles/:id" element={<RoleForm />} />
         <Route path="resources" element={<ResourcesAdmin />} />
         <Route path="resources/:id" element={<ResourceForm />} />
+        <Route path="board" element={<BoardAdmin />} />
         <Route path="trails" element={<TrailsAdmin />} />
         <Route path="trails/new" element={<TrailForm />} />
         <Route path="trails/edit/:slug" element={<TrailForm />} />
         <Route path="issues" element={<IssuesAdmin />} />
+        <Route path="changes" element={<ChangeRequestsAdmin />} />
         <Route path="pathways/:slug" element={<PathwayAdmin />} />
         <Route path="suggestions" element={<SuggestionsAdmin />} />
         <Route path="users" element={<UsersAdmin />} />
