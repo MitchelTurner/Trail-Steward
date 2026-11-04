@@ -1,0 +1,18 @@
+# `nest build` cannot see workspace packages until `shared` and `db` are compiled.
+[build]
+builder = "RAILPACK"
+buildCommand = "pnpm --filter shared build && pnpm --filter db build && pnpm --filter api exec nest build"
+watchPatterns = [
+  "apps/api/**",
+  "packages/db/**",
+  "packages/shared/**",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
+  "package.json",
+]
+
+[deploy]
+preDeployCommand = ["pnpm --filter db exec prisma migrate deploy"]
+startCommand = "pnpm --filter api start"
+healthcheckPath = "/api/health"
+healthcheckTimeout = 300

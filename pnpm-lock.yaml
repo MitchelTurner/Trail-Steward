@@ -250,6 +250,9 @@ importers:
       exceljs:
         specifier: ^4.4.0
         version: 4.4.0
+      prisma:
+        specifier: 5.22.0
+        version: 5.22.0
       shared:
         specifier: workspace:*
         version: link:../shared
@@ -257,9 +260,6 @@ importers:
       '@types/node':
         specifier: ^22.20.5
         version: 22.20.5
-      prisma:
-        specifier: 5.22.0
-        version: 5.22.0
       tsx:
         specifier: ^4.19.2
         version: 4.23.15

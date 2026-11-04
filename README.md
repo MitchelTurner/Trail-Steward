@@ -57,7 +57,11 @@ A downloaded backup can also be restored with `pg_restore` into an empty databas
 
 ## Railway
 
-One service each for `web`, `api`, `worker`, Postgres, and Redis. Use the Dockerfiles in `apps/web`, `apps/api`, and `apps/worker`. The API image runs `prisma migrate deploy` before it listens. Set the health check path to `/api/health`.
+One service each for `web`, `api`, `worker`, Postgres, and Redis. Railpack builds from the repository root.
+
+`apps/api/railway.toml` compiles `shared` and `db`, then the API, and runs `prisma migrate deploy` before the API listens. The health check path is `/api/health`. `apps/worker/railway.toml` compiles the same packages, then the worker. A build log that runs `nest build` by itself is an older snapshot. Redeploy the API from the latest `main`.
+
+The Dockerfiles in `apps/web`, `apps/api`, and `apps/worker` do those same steps when a service uses the Dockerfile builder.
 
 The web container proxies `/api` to `API_UPSTREAM` (default `http://api:3000`). On Railway, set `API_UPSTREAM` to the API service's private URL, including the port. The browser talks to the web origin only, so the session cookie stays on that site.
 

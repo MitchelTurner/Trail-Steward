@@ -1,0 +1,15 @@
+# The worker imports `shared` and `db`. Compile those packages before `tsc`.
+[build]
+builder = "RAILPACK"
+buildCommand = "pnpm --filter shared build && pnpm --filter db build && pnpm --filter worker exec tsc"
+watchPatterns = [
+  "apps/worker/**",
+  "packages/db/**",
+  "packages/shared/**",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
+  "package.json",
+]
+
+[deploy]
+startCommand = "pnpm --filter worker start"
