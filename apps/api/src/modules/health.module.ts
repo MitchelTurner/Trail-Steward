@@ -1,5 +1,6 @@
 import { Controller, Get, Module, Res } from '@nestjs/common';
 import type { Response } from 'express';
+import { publicError } from '../http-error';
 import { PrismaService } from '../prisma.service';
 import { RedisService } from '../redis.service';
 
@@ -19,7 +20,7 @@ export class HealthController {
       await this.prisma.$queryRaw`SELECT 1`;
     } catch (error) {
       db = 'error';
-      dbReason = databaseProblem(error);
+      dbReason = publicError(error);
       console.error(`Database check failed: ${dbReason}`);
     }
     try {
@@ -32,19 +33,6 @@ export class HealthController {
     res.status(status === 'ok' ? 200 : 503);
     return { status, db, redis: redisStatus, ...(dbReason ? { dbReason } : {}) };
   }
-}
-
-function databaseProblem(error: unknown): string {
-  const code =
-    error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
-      ? error.code
-      : '';
-  const message = error instanceof Error ? error.message : 'Database query failed';
-  const clean = message
-    .replace(/postgres(?:ql)?:\/\/\S+/gi, 'postgresql://redacted')
-    .replace(/\s+/g, ' ')
-    .slice(0, 180);
-  return code ? `${code}: ${clean}` : clean;
 }
 
 @Module({ controllers: [HealthController] })

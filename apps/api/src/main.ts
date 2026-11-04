@@ -6,11 +6,14 @@ import helmet from 'helmet';
 import { Logger as PinoLogger } from 'nestjs-pino';
 import type { ServerEnv } from 'shared';
 import { loadServerEnv } from 'shared';
+import { ApiExceptionFilter } from './api-exception.filter';
 import { AppModule } from './app.module';
+import { migrateDatabase, seedTopicsIfEmpty } from './boot-data';
 import { ENV } from './tokens';
 
 export function configureHttp(app: INestApplication): void {
   app.setGlobalPrefix('api');
+  app.useGlobalFilters(new ApiExceptionFilter());
   app.use(helmet());
   app.use(cookieParser());
   const env = app.get<ServerEnv>(ENV);
@@ -30,6 +33,12 @@ async function bootstrap(): Promise<void> {
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
     process.exit(1);
+  }
+  try {
+    migrateDatabase();
+    await seedTopicsIfEmpty();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
   }
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   app.useLogger(app.get(PinoLogger));
