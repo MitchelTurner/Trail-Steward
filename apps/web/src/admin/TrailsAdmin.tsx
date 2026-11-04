@@ -5,9 +5,11 @@ import { lineStringSchema, pointSchema, type GeoPoint, type LineString } from 's
 import {
   ASSET_KIND_LABELS,
   COUNTER_KIND_LABELS,
+  PACKET_STATUS_LABELS,
   assetKinds,
   contentStatuses,
   counterKinds,
+  packetStatuses,
   visibilities,
 } from 'shared/kinds';
 import { api, ApiError } from '../api';
@@ -51,6 +53,16 @@ type TrailRow = {
     reviewedAt: string | null;
   }[];
   files: { id: string; name: string; contentType: string; visibility: string }[];
+  issues: { id: string; title: string }[];
+  packets: {
+    id: string;
+    title: string;
+    notes: string;
+    status: string;
+    issueIds: string[];
+    workdayIds: string[];
+    fileIds: string[];
+  }[];
 };
 
 function parseLine(text: string): LineString | null {
@@ -256,6 +268,15 @@ export function TrailForm() {
       ) : null}
       {data ? <CounterEditor slug={data.slug} counters={data.counters} /> : null}
       {data ? <FileEditor slug={data.slug} files={data.files} /> : null}
+      {data ? (
+        <PacketEditor
+          slug={data.slug}
+          issues={data.issues}
+          workdays={data.workdays}
+          files={data.files}
+          packets={data.packets}
+        />
+      ) : null}
       {data ? (
         <a className={buttonClass('quiet')} href={`/api/trails/${data.slug}/packet`}>
           Download work list
@@ -649,6 +670,158 @@ function FileEditor({ slug, files }: { slug: string; files: TrailRow['files'] })
         {error ? <p className="text-stale">{error}</p> : null}
         <button className={buttonClass('quiet')} type="submit" disabled={upload.isPending}>
           Upload file
+        </button>
+      </form>
+    </section>
+  );
+}
+
+function PacketEditor({
+  slug,
+  issues,
+  workdays,
+  files,
+  packets,
+}: {
+  slug: string;
+  issues: TrailRow['issues'];
+  workdays: TrailRow['workdays'];
+  files: TrailRow['files'];
+  packets: TrailRow['packets'];
+}) {
+  const client = useQueryClient();
+  const [error, setError] = useState('');
+  const refresh = async () => {
+    await client.invalidateQueries({ queryKey: ['trail', 'manage', slug] });
+    await client.invalidateQueries({ queryKey: ['maintenance-board'] });
+  };
+  const save = useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      api(`/api/trails/${slug}/packets`, { method: 'POST', body: JSON.stringify(body) }),
+    onSuccess: async () => {
+      setError('');
+      await refresh();
+    },
+    onError: (err: unknown) => {
+      setError(err instanceof ApiError ? err.message : 'Could not save that work packet.');
+    },
+  });
+  const update = useMutation({
+    mutationFn: (body: { id: string; status: string }) =>
+      api(`/api/packets/${body.id}`, { method: 'PATCH', body: JSON.stringify({ status: body.status }) }),
+    onSuccess: refresh,
+    onError: (err: unknown) => {
+      setError(err instanceof ApiError ? err.message : 'Could not update that work packet.');
+    },
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) => api(`/api/packets/${id}`, { method: 'DELETE' }),
+    onSuccess: refresh,
+  });
+
+  function onSave(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    save.mutate(
+      {
+        title: String(data.get('title') ?? ''),
+        notes: String(data.get('notes') ?? ''),
+        status: String(data.get('status') ?? 'DRAFT'),
+        issueIds: data.getAll('issueIds').map(String),
+        workdayIds: data.getAll('workdayIds').map(String),
+        fileIds: data.getAll('fileIds').map(String),
+      },
+      { onSuccess: () => form.reset() },
+    );
+  }
+
+  return (
+    <section className="space-y-3">
+      <h3 className="font-semibold text-navy">Work packets</h3>
+      <p className="text-sm">
+        Save the problems, work days, and files you want in one packet. Download prints that packet, not everything open today.
+      </p>
+      <ul className="space-y-3">
+        {packets.map((packet) => (
+          <li key={packet.id} className="space-y-2 rounded border border-line p-3">
+            <p className="font-medium">
+              {packet.title} · {PACKET_STATUS_LABELS[packet.status as (typeof packetStatuses)[number]] ?? packet.status}
+            </p>
+            {packet.notes ? <p className="text-sm">{packet.notes}</p> : null}
+            <Field label={`Status for ${packet.title}`}>
+              <select
+                className={inputClass}
+                value={packet.status}
+                onChange={(event) => update.mutate({ id: packet.id, status: event.target.value })}
+              >
+                {packetStatuses.map((status) => (
+                  <option key={status} value={status}>
+                    {PACKET_STATUS_LABELS[status]}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <div className="flex flex-wrap gap-2">
+              <a className={buttonClass('quiet')} href={`/api/packets/${packet.id}/pdf`}>
+                Download packet
+              </a>
+              <button className={buttonClass('quiet')} type="button" onClick={() => remove.mutate(packet.id)}>
+                Remove packet
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <form className="max-w-xl space-y-3" onSubmit={onSave}>
+        <Field label="Packet title">
+          <input className={inputClass} name="title" required />
+        </Field>
+        <Field label="Packet notes">
+          <input className={inputClass} name="notes" />
+        </Field>
+        <Field label="Packet status">
+          <select className={inputClass} name="status" defaultValue="DRAFT">
+            {packetStatuses.map((status) => (
+              <option key={status} value={status}>
+                {PACKET_STATUS_LABELS[status]}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-navy">Problems</p>
+          {issues.length === 0 ? <p className="text-sm">None.</p> : null}
+          {issues.map((issue) => (
+            <label key={issue.id} className="flex min-h-11 items-center gap-2">
+              <input type="checkbox" name="issueIds" value={issue.id} />
+              {issue.title}
+            </label>
+          ))}
+        </div>
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-navy">Work days</p>
+          {workdays.length === 0 ? <p className="text-sm">None.</p> : null}
+          {workdays.map((day) => (
+            <label key={day.id} className="flex min-h-11 items-center gap-2">
+              <input type="checkbox" name="workdayIds" value={day.id} />
+              {formatDay(day.workDate)} — {day.title}
+            </label>
+          ))}
+        </div>
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-navy">Files in the packet</p>
+          {files.length === 0 ? <p className="text-sm">None.</p> : null}
+          {files.map((file) => (
+            <label key={file.id} className="flex min-h-11 items-center gap-2">
+              <input type="checkbox" name="fileIds" value={file.id} />
+              {file.name}
+            </label>
+          ))}
+        </div>
+        {error ? <p className="text-stale">{error}</p> : null}
+        <button className={buttonClass('quiet')} type="submit" disabled={save.isPending}>
+          Save work packet
         </button>
       </form>
     </section>

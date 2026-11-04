@@ -25,6 +25,13 @@ export const issueStatuses = ['OPEN', 'CLOSED'] as const;
 export const workdayStatuses = ['PLANNED', 'DONE', 'CANCELED'] as const;
 export const changeRequestStatuses = ['OPEN', 'ACCEPTED', 'REJECTED'] as const;
 export const counterKinds = ['TRAIL', 'CABIN', 'OTHER'] as const;
+export const packetStatuses = ['DRAFT', 'READY', 'DONE'] as const;
+
+export const PACKET_STATUS_LABELS: Record<(typeof packetStatuses)[number], string> = {
+  DRAFT: 'Draft',
+  READY: 'Ready to send',
+  DONE: 'Done',
+};
 
 export const COUNTER_KIND_LABELS: Record<(typeof counterKinds)[number], string> = {
   TRAIL: 'Trail counter',

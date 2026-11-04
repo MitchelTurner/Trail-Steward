@@ -63,6 +63,7 @@ export class MaintenanceController {
           { issues: { some: { status: 'OPEN' } } },
           { workdays: { some: { status: 'PLANNED' } } },
           { changeRequests: { some: { status: 'OPEN' } } },
+          { packets: { some: { status: { in: ['DRAFT', 'READY'] } } } },
         ],
       },
       orderBy: { name: 'asc' },
@@ -79,6 +80,11 @@ export class MaintenanceController {
           include: { hostOrg: { select: { name: true } } },
         },
         changeRequests: { where: { status: 'OPEN' }, orderBy: { createdAt: 'desc' } },
+        packets: {
+          where: { status: { in: ['DRAFT', 'READY'] } },
+          orderBy: { updatedAt: 'desc' },
+          select: { id: true, title: true, status: true },
+        },
       },
     });
     return {
@@ -100,6 +106,11 @@ export class MaintenanceController {
         openChangeRequests: trail.changeRequests.map((change) => ({
           id: change.id,
           message: change.message,
+        })),
+        packets: trail.packets.map((packet) => ({
+          id: packet.id,
+          title: packet.title,
+          status: packet.status,
         })),
       })),
     };

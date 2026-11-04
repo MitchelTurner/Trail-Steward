@@ -1,6 +1,6 @@
 # Trail Steward
 
-Phase 1 is the planning navigator. Phase 2 adds the trail map. Phase 3 is the maintenance board. Phase 4 adds trail counters. Phase 5 stores a PDF or photo on a trail. The design doc did not name an object store, so the file bytes live in Postgres.
+Phase 1 is the planning navigator. Phase 2 adds the trail map. Phase 3 is the maintenance board. Phase 4 adds trail counters. Phase 5 stores a PDF or photo on a trail. Phase 6 saves a work packet. The design doc did not name an object store, so the file bytes live in Postgres.
 
 `Organization` stays the owner directory. A trail points at it with `dataStewardOrgId` and `maintenanceOwnerOrgId`. `freshness()` covers trails and places. The review dashboard adds sections for trails, map points, and issues that have no owner.
 
@@ -16,7 +16,7 @@ A work day is a date, a title, and an optional host from the directory. Planned 
 
 A map change request is a note that the line, the name, or the owner is wrong. Accepting it does not move the line. The editor still edits the trail.
 
-The maintenance board lists trails that have an open problem, a planned work day, or an open map change. Download work list makes a PDF of that snapshot, including the latest count for each counter. It is not stored.
+The maintenance board lists trails that have an open problem, a planned work day, an open map change, or a saved work packet. Download work list makes a PDF of everything open right now, including the latest count for each counter. That download is a snapshot. It is not stored.
 
 ## Counters
 
@@ -25,6 +25,10 @@ A counter belongs to one trail. Its kind is a trail counter, a cabin count, or o
 ## Files
 
 An editor uploads a PDF or a photo, up to 5 MB, onto a trail. The file stays with editors unless they mark it public. A public file on a published trail can be downloaded from the trail page. The spreadsheet import still carries the workbook in the job.
+
+## Work packets
+
+An editor saves a work packet on one trail. The packet has a title, notes, and a status: draft, ready to send, or done. It keeps the problems, work days, and files the editor checked. Download packet prints that saved set. It does not add problems that were left off. The packet stays with editors. A draft or a packet that is ready to send shows on the maintenance board. Marking it done takes it off the board.
 
 ## What it does
 

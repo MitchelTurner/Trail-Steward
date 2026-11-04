@@ -40,6 +40,8 @@ ON CONFLICT (slug) DO UPDATE SET
 UPDATE "Trail"
 SET geom = ST_SetSRID(ST_GeomFromGeoJSON(line::text), 4326)::geometry(LineString, 4326)
 WHERE slug = 'harbor-path';
+DELETE FROM "RepairPacket" WHERE "trailId" = (SELECT id FROM "Trail" WHERE slug = 'harbor-path');
+DELETE FROM "TrailFile" WHERE "trailId" = (SELECT id FROM "Trail" WHERE slug = 'harbor-path');
 DELETE FROM "Asset" WHERE "trailId" = (SELECT id FROM "Trail" WHERE slug = 'harbor-path');
 INSERT INTO "Asset" (
   id, "trailId", name, kind, notes, point, "reviewIntervalDays", "createdAt", "updatedAt"

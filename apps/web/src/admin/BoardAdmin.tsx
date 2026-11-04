@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { PACKET_STATUS_LABELS, packetStatuses } from 'shared/kinds';
 import { api, ApiError } from '../api';
 import { buttonClass, formatDay } from '../ui';
 
@@ -11,6 +12,7 @@ type Board = {
     openIssues: { id: string; title: string; ownerName: string | null }[];
     plannedWorkdays: { id: string; title: string; workDate: string; hostName: string | null }[];
     openChangeRequests: { id: string; message: string }[];
+    packets: { id: string; title: string; status: string }[];
   }[];
 };
 
@@ -26,7 +28,7 @@ export function BoardAdmin() {
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-navy">Maintenance board</h2>
-      <p>Trails with an open problem, a planned work day, or a map change waiting.</p>
+      <p>Trails with an open problem, a planned work day, a map change waiting, or a saved work packet.</p>
       {trails.length === 0 ? <p>Nothing is waiting.</p> : null}
       <ul className="space-y-3">
         {trails.map((trail) => (
@@ -65,6 +67,20 @@ export function BoardAdmin() {
                     <li key={day.id}>
                       {formatDay(day.workDate)} — {day.title}
                       {day.hostName ? ` · ${day.hostName}` : ''}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {trail.packets.length > 0 ? (
+              <div>
+                <p className="text-sm font-medium">Work packets</p>
+                <ul className="text-sm">
+                  {trail.packets.map((packet) => (
+                    <li key={packet.id}>
+                      {packet.title}
+                      {' · '}
+                      {PACKET_STATUS_LABELS[packet.status as (typeof packetStatuses)[number]] ?? packet.status}
                     </li>
                   ))}
                 </ul>

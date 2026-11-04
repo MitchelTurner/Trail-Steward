@@ -99,6 +99,13 @@ test('an editor publishes a trail from the form', async ({ page }) => {
   await page.getByLabel('Who can download it').selectOption('PUBLIC');
   await page.getByRole('button', { name: 'Upload file' }).click();
   await expect(page.getByRole('link', { name: 'harbor.png' })).toBeVisible();
+  await page.getByLabel('Packet title').fill('Spring repairs');
+  await page.getByLabel('Packet notes').fill('Bring lumber.');
+  await page.getByRole('checkbox', { name: 'Washout' }).first().check();
+  await page.getByRole('button', { name: 'Save work packet' }).click();
+  await expect(page.getByText('Spring repairs · Draft')).toBeVisible();
+  await page.goto('/admin/board');
+  await expect(page.getByText('Spring repairs · Draft')).toBeVisible();
   await page.goto('/trails/harbor-path');
   await expect(page.getByRole('link', { name: 'harbor.png' })).toBeVisible();
   await page.goto('/admin/trails/new');

@@ -61,6 +61,7 @@ describe('API', () => {
     prisma = new PrismaClient();
     await prisma.$executeRawUnsafe(`
       TRUNCATE TABLE
+        "RepairPacket",
         "ChangeRequest",
         "Workday",
         "CounterReading",
@@ -584,5 +585,66 @@ describe('API', () => {
       .expect(200);
     expect(downloaded.headers['content-type']).toContain('image/png');
     expect(Buffer.compare(downloaded.body as Buffer, png)).toBe(0);
+  });
+
+  it('saves a work packet and prints only the chosen problem', async () => {
+    await request(app.getHttpServer())
+      .post('/api/issues')
+      .send({
+        title: 'Leave this problem off',
+        detail: 'Not in the packet.',
+        trailSlug: 'harbor-path',
+      })
+      .expect(201);
+    const managed = await editor.get('/api/trails/harbor-path').expect(200);
+    const washout = managed.body.issues.find((item: { title: string }) => item.title === 'Washout');
+    const file = managed.body.files.find((item: { name: string }) => item.name === 'harbor.png');
+    expect(washout).toBeTruthy();
+    expect(file).toBeTruthy();
+    const created = await editor
+      .post('/api/trails/harbor-path/packets')
+      .send({
+        title: 'Spring repairs',
+        notes: 'Bring lumber.',
+        issueIds: [washout.id],
+        fileIds: [file.id],
+      })
+      .expect(201);
+    expect(created.body.status).toBe('DRAFT');
+    await editor
+      .post('/api/trails/harbor-path/packets')
+      .send({ title: 'Bad packet', issueIds: ['not-on-this-trail'] })
+      .expect(400);
+    const pub = await request(app.getHttpServer()).get('/api/trails/harbor-path').expect(200);
+    expect(pub.body.packets).toBeUndefined();
+    await request(app.getHttpServer()).get(`/api/packets/${created.body.id}/pdf`).expect(401);
+    const pdf = await editor
+      .get(`/api/packets/${created.body.id}/pdf`)
+      .buffer(true)
+      .parse((res, callback) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+        res.on('end', () => callback(null, Buffer.concat(chunks)));
+      })
+      .expect(200);
+    expect(pdf.headers['content-type']).toContain('application/pdf');
+    const dir = await mkdtemp(path.join(tmpdir(), 'ts-packet-'));
+    const filePath = path.join(dir, 'packet.pdf');
+    await writeFile(filePath, pdf.body as Buffer);
+    const { stdout } = await execFileAsync('pdftotext', [filePath, '-']);
+    expect(stdout).toContain('Spring repairs');
+    expect(stdout).toContain('Bring lumber.');
+    expect(stdout).toContain('Washout');
+    expect(stdout).toContain('harbor.png');
+    expect(stdout).not.toContain('Leave this problem off');
+    expect(stdout).not.toContain('follow the dock');
+    await rm(dir, { recursive: true, force: true });
+    const board = await editor.get('/api/maintenance/board').expect(200);
+    const row = board.body.trails.find((item: { slug: string }) => item.slug === 'harbor-path');
+    expect(row.packets.some((item: { title: string }) => item.title === 'Spring repairs')).toBe(true);
+    await editor.patch(`/api/packets/${created.body.id}`).send({ status: 'DONE' }).expect(200);
+    const after = await editor.get('/api/maintenance/board').expect(200);
+    const still = after.body.trails.find((item: { slug: string }) => item.slug === 'harbor-path');
+    expect(still.packets.some((item: { title: string }) => item.title === 'Spring repairs')).toBe(false);
   });
 });

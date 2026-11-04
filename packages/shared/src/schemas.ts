@@ -6,6 +6,7 @@ import {
   contentStatuses,
   counterKinds,
   orgKinds,
+  packetStatuses,
   userRoles,
   visibilities,
   workdayStatuses,
@@ -206,6 +207,15 @@ export const counterWriteSchema = z.object({
   kind: z.enum(counterKinds),
   notes: z.string().trim().max(2000).optional(),
   reviewIntervalDays: z.number().int().positive().max(3650).optional(),
+});
+
+export const packetWriteSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  notes: z.string().trim().max(4000).optional(),
+  status: z.enum(packetStatuses).optional(),
+  issueIds: z.array(z.string()).max(100).optional(),
+  workdayIds: z.array(z.string()).max(100).optional(),
+  fileIds: z.array(z.string()).max(50).optional(),
 });
 
 export const counterReadingSchema = z.object({

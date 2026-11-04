@@ -42,6 +42,23 @@ const trailInclude = {
     select: { id: true, name: true, contentType: true, visibility: true, createdAt: true },
     orderBy: { createdAt: 'desc' as const },
   },
+  issues: {
+    where: { status: 'OPEN' as const },
+    select: { id: true, title: true },
+    orderBy: { createdAt: 'desc' as const },
+  },
+  packets: {
+    select: {
+      id: true,
+      title: true,
+      notes: true,
+      status: true,
+      issueIds: true,
+      workdayIds: true,
+      fileIds: true,
+    },
+    orderBy: { updatedAt: 'desc' as const },
+  },
 } satisfies Prisma.TrailInclude;
 
 type TrailRow = Prisma.TrailGetPayload<{ include: typeof trailInclude }>;
@@ -118,6 +135,20 @@ function presentTrail(trail: TrailRow, detailed: boolean) {
         contentType: file.contentType,
         ...(detailed ? { visibility: file.visibility } : {}),
       })),
+    ...(detailed
+      ? {
+          issues: trail.issues.map((issue) => ({ id: issue.id, title: issue.title })),
+          packets: trail.packets.map((packet) => ({
+            id: packet.id,
+            title: packet.title,
+            notes: packet.notes,
+            status: packet.status,
+            issueIds: packet.issueIds,
+            workdayIds: packet.workdayIds,
+            fileIds: packet.fileIds,
+          })),
+        }
+      : {}),
     assets: trail.assets.map((asset) => ({
       id: asset.id,
       name: asset.name,

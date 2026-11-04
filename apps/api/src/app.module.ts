@@ -11,6 +11,7 @@ import { AuthModule } from './modules/auth.module';
 import { ChecklistsModule } from './modules/checklists.module';
 import { CountersModule } from './modules/counters.module';
 import { FilesModule } from './modules/files.module';
+import { PacketsModule } from './modules/packets.module';
 import { HealthModule } from './modules/health.module';
 import { IssuesModule } from './modules/issues.module';
 import { MaintenanceModule } from './modules/maintenance.module';
@@ -84,6 +85,7 @@ export class CoreModule {}
     MaintenanceModule,
     CountersModule,
     FilesModule,
+    PacketsModule,
     ChecklistsModule,
     SuggestionsModule,
     AuthModule,
