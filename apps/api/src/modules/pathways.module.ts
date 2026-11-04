@@ -78,7 +78,7 @@ export class PathwaysController {
       version: pathway.version,
       questions,
       ...reviewFields(pathway, pathway.maintainer, Boolean(user)),
-      // TODO(spec): "step outlines" on the public pathway. Full step text is on the saved checklist.
+      // Public visitors see step titles only. The instructions stay on the saved checklist.
       steps: pathway.steps.map((step) => {
         const outline = {
           id: step.id,

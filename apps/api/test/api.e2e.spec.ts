@@ -190,6 +190,17 @@ describe('API', () => {
       .expect(400);
   });
 
+  it('lists step titles on the public pathway and keeps the instructions for editors', async () => {
+    const pub = await request(app.getHttpServer()).get('/api/pathways/funding-application').expect(200);
+    expect(pub.body.steps[0].title).toContain('owns and manages');
+    expect(pub.body.steps[0].why).toBeUndefined();
+    expect(pub.body.steps[0].howTo).toBeUndefined();
+    const staff = await editor.get('/api/pathways/funding-application').expect(200);
+    expect(typeof staff.body.steps[0].why).toBe('string');
+    expect(staff.body.steps[0].why.length).toBeGreaterThan(0);
+    expect(typeof staff.body.steps[0].howTo).toBe('string');
+  });
+
   it('builds the four pilot checklists and keeps edits on the private link', async () => {
     const cases: { answers: Record<string, unknown>; keys: string[] }[] = [
       {

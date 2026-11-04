@@ -73,6 +73,19 @@ export function StartPage() {
     <div className="space-y-5">
       <h1 className="text-2xl font-semibold text-navy">{pathway.data.title}</h1>
       <p>{pathway.data.summary}</p>
+      <details className="rounded border border-line bg-card p-3">
+        <summary className="min-h-11 cursor-pointer font-medium text-navy">
+          Steps this checklist can include
+        </summary>
+        <p className="mt-2 text-sm">
+          Your answers decide which ones you see. The instructions for each step are on the checklist.
+        </p>
+        <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm">
+          {pathway.data.steps.map((item) => (
+            <li key={item.key}>{item.title}</li>
+          ))}
+        </ol>
+      </details>
       <div className="flex gap-2" aria-hidden="true">
         {questions.map((item, index) => (
           <span

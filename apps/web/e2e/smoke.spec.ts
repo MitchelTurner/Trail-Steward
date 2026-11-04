@@ -18,6 +18,14 @@ test('home lists the topics without sideways scrolling', async ({ page }) => {
 
 test('a checklist keeps two finished steps after reload', async ({ page }) => {
   await page.goto('/start/funding-application');
+  await page.getByText('Steps this checklist can include').click();
+  await expect(
+    page.getByText('Confirm who owns and manages every piece of land the trail crosses'),
+  ).toBeVisible();
+  const fits = await page.evaluate(
+    () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
+  );
+  expect(fits).toBe(true);
   await page.getByRole('combobox').selectOption('Sitka');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('checkbox', { name: 'Tongass National Forest (Forest Service)' }).check();
