@@ -1,6 +1,6 @@
 # Trail Steward
 
-Phase 1 is the planning navigator. Phase 2 adds the trail map. Phase 3 is the maintenance board: planned work days, requests to change the map, and a PDF work list for one trail. Trail counters and file storage are still later. The design doc did not spell the board out, so this is the smallest version that fits the reserved names.
+Phase 1 is the planning navigator. Phase 2 adds the trail map. Phase 3 is the maintenance board. Phase 4 adds trail counters: a named counter on a trail and a whole-number reading for a date. File storage is still later. The design doc named counters and cabin occupancy without fields, so a date and a number is the simplest reading.
 
 `Organization` stays the owner directory. A trail points at it with `dataStewardOrgId` and `maintenanceOwnerOrgId`. `freshness()` covers trails and places. The review dashboard adds sections for trails, map points, and issues that have no owner.
 
@@ -16,7 +16,11 @@ A work day is a date, a title, and an optional host from the directory. Planned 
 
 A map change request is a note that the line, the name, or the owner is wrong. Accepting it does not move the line. The editor still edits the trail.
 
-The maintenance board lists trails that have an open problem, a planned work day, or an open map change. Download work list makes a PDF of that snapshot. It is not stored. Counters are not on this board yet.
+The maintenance board lists trails that have an open problem, a planned work day, or an open map change. Download work list makes a PDF of that snapshot, including the latest count for each counter. It is not stored.
+
+## Counters
+
+A counter belongs to one trail. Its kind is a trail counter, a cabin count, or other. An editor records how many visits the counter showed on a date. A newer date replaces the number shown on the trail page. Older numbers stay in the editor list. The review board and the Monday reminder include counters.
 
 ## What it does
 

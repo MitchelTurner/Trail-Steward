@@ -63,6 +63,8 @@ describe('API', () => {
       TRUNCATE TABLE
         "ChangeRequest",
         "Workday",
+        "CounterReading",
+        "Counter",
         "Issue",
         "Asset",
         "Trail",
@@ -516,5 +518,32 @@ describe('API', () => {
     expect(stdout).toContain('Washout');
     expect(stdout).toContain('follow the dock');
     await rm(dir, { recursive: true, force: true });
+  });
+
+  it('records a trail count and shows the latest reading on the public trail', async () => {
+    const created = await editor
+      .post('/api/trails/harbor-path/counters')
+      .send({ name: 'Harbor counter', kind: 'TRAIL' })
+      .expect(201);
+    await editor
+      .post(`/api/trails/harbor-path/counters/${created.body.id}/readings`)
+      .send({ recordedOn: '2026-11-01', count: 100 })
+      .expect(201);
+    await editor
+      .post(`/api/trails/harbor-path/counters/${created.body.id}/readings`)
+      .send({ recordedOn: '2026-11-02', count: 40 })
+      .expect(201);
+    const pub = await request(app.getHttpServer()).get('/api/trails/harbor-path').expect(200);
+    const listed = pub.body.counters.find((item: { name: string }) => item.name === 'Harbor counter');
+    expect(listed.latest).toEqual({ id: expect.any(String), recordedOn: '2026-11-02', count: 40, notes: null });
+    expect(listed.readings).toBeUndefined();
+    const managed = await editor.get('/api/trails/harbor-path').expect(200);
+    const editorRow = managed.body.counters.find((item: { name: string }) => item.name === 'Harbor counter');
+    expect(editorRow.readings).toHaveLength(2);
+    const dashboard = await coordinator.get('/api/review/dashboard').expect(200);
+    const section = dashboard.body.sections.find((item: { key: string }) => item.key === 'counters');
+    expect(section.items.some((item: { label: string }) => item.label.includes('Harbor counter'))).toBe(
+      true,
+    );
   });
 });

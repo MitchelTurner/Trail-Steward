@@ -279,6 +279,7 @@ model User {
   maintainedTrails    Trail[]        @relation("TrailMaintainer")
   maintainedAssets    Asset[]        @relation("AssetMaintainer")
   maintainedIssues    Issue[]        @relation("IssueMaintainer")
+  maintainedCounters  Counter[]      @relation("CounterMaintainer")
   resolvedSuggestions Suggestion[]   @relation("SuggestionResolver")
   resolvedChangeRequests ChangeRequest[] @relation("ChangeRequestResolver")
   createdAt           DateTime       @default(now())
@@ -332,6 +333,7 @@ model Trail {
   issues Issue[]
   workdays Workday[]
   changeRequests ChangeRequest[]
+  counters Counter[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -417,6 +419,42 @@ model ChangeRequest {
   resolvedAt     DateTime?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
+}
+
+enum CounterKind {
+  TRAIL
+  CABIN
+  OTHER
+}
+
+/// A use count kept for one trail.
+// TODO(spec): the design doc names trail counters and cabin occupancy, not the fields. A whole number on a date is the simplest reading.
+model Counter {
+  id      String      @id @default(cuid())
+  trailId String
+  trail   Trail       @relation(fields: [trailId], references: [id], onDelete: Cascade)
+  name    String
+  kind    CounterKind
+  notes   String?
+
+  maintainerId       String?
+  maintainer         User?     @relation("CounterMaintainer", fields: [maintainerId], references: [id])
+  reviewedAt         DateTime?
+  reviewIntervalDays Int       @default(365)
+
+  readings  CounterReading[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model CounterReading {
+  id          String   @id @default(cuid())
+  counterId   String
+  counter     Counter  @relation(fields: [counterId], references: [id], onDelete: Cascade)
+  recordedOn  DateTime @db.Date
+  count       Int
+  notes       String?
+  createdAt   DateTime @default(now())
 }
 
 model AuditLog {

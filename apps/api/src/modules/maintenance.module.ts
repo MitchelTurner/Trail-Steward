@@ -17,6 +17,7 @@ import {
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
+import { COUNTER_KIND_LABELS } from 'shared';
 import { AuditService } from '../audit.service';
 import {
   ChangeRequestCreateDto,
@@ -324,6 +325,12 @@ export class WorkListController {
           include: { hostOrg: { select: { name: true } } },
         },
         changeRequests: { where: { status: 'OPEN' }, orderBy: { createdAt: 'desc' } },
+        counters: {
+          orderBy: { name: 'asc' },
+          include: {
+            readings: { orderBy: [{ recordedOn: 'desc' }, { createdAt: 'desc' }], take: 1 },
+          },
+        },
       },
     });
     if (!trail) throw new NotFoundException('That trail is not on the map.');
@@ -349,6 +356,14 @@ export class WorkListController {
         notes: day.notes ?? '',
       })),
       changes: trail.changeRequests.map((change) => ({ message: change.message })),
+      counts: trail.counters.map((counter) => {
+        const latest = counter.readings[0];
+        const kind = COUNTER_KIND_LABELS[counter.kind];
+        if (!latest) return { label: `${counter.name} (${kind}): no count yet` };
+        return {
+          label: `${counter.name} (${kind}): ${latest.count.toLocaleString('en-US')} visits recorded on ${formatDay(dayStamp(latest.recordedOn))}`,
+        };
+      }),
     });
     await this.audit.record({
       actorId: user.id,

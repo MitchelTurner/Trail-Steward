@@ -12,7 +12,8 @@ export type ReviewEntity =
   | 'pathway'
   | 'trail'
   | 'asset'
-  | 'issue';
+  | 'issue'
+  | 'counter';
 
 type ReviewItem = {
   entityType: ReviewEntity;
@@ -77,7 +78,7 @@ export class ReviewService {
   }
 
   async dashboard() {
-    const [orgs, roles, resources, pathways, trails, assets, issues, changes, metrics] =
+    const [orgs, roles, resources, pathways, trails, assets, issues, counters, changes, metrics] =
       await Promise.all([
       this.prisma.organization.findMany({
         include: { maintainer: true },
@@ -97,6 +98,10 @@ export class ReviewService {
       this.prisma.issue.findMany({
         where: { ownerOrgId: null, status: 'OPEN' },
         orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.counter.findMany({
+        include: { maintainer: true, trail: true },
+        orderBy: { name: 'asc' },
       }),
       this.prisma.changeRequest.findMany({
         where: { status: 'OPEN' },
@@ -190,6 +195,18 @@ export class ReviewService {
           freshness: freshness(issue.reviewedAt, issue.reviewIntervalDays),
           maintainerId: issue.maintainerId,
           maintainerName: null,
+        })),
+      ),
+      this.section(
+        'counters',
+        'Counters',
+        counters.map((counter) => ({
+          entityType: 'counter' as const,
+          id: counter.id,
+          label: `${counter.trail.name} — ${counter.name}`,
+          freshness: freshness(counter.reviewedAt, counter.reviewIntervalDays),
+          maintainerId: counter.maintainerId,
+          maintainerName: counter.maintainer?.name ?? null,
         })),
       ),
       {
@@ -287,7 +304,9 @@ export class ReviewService {
                 ? await this.prisma.trail.findUnique({ where: { id } })
                 : entity === 'asset'
                   ? await this.prisma.asset.findUnique({ where: { id } })
-                  : await this.prisma.issue.findUnique({ where: { id } });
+                  : entity === 'counter'
+                    ? await this.prisma.counter.findUnique({ where: { id } })
+                    : await this.prisma.issue.findUnique({ where: { id } });
     if (!row) throw new NotFoundException('Record not found.');
     return row;
   }
@@ -300,6 +319,7 @@ export class ReviewService {
     else if (entity === 'pathway') await this.prisma.pathway.update({ where: { id }, data });
     else if (entity === 'trail') await this.prisma.trail.update({ where: { id }, data });
     else if (entity === 'asset') await this.prisma.asset.update({ where: { id }, data });
+    else if (entity === 'counter') await this.prisma.counter.update({ where: { id }, data });
     else await this.prisma.issue.update({ where: { id }, data });
   }
 
@@ -311,6 +331,7 @@ export class ReviewService {
     else if (entity === 'pathway') await this.prisma.pathway.update({ where: { id }, data });
     else if (entity === 'trail') await this.prisma.trail.update({ where: { id }, data });
     else if (entity === 'asset') await this.prisma.asset.update({ where: { id }, data });
+    else if (entity === 'counter') await this.prisma.counter.update({ where: { id }, data });
     else await this.prisma.issue.update({ where: { id }, data });
   }
 }

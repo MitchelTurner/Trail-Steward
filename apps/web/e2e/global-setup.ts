@@ -74,6 +74,21 @@ ON CONFLICT (id) DO UPDATE SET
   "workDate" = EXCLUDED."workDate",
   status = EXCLUDED.status,
   "updatedAt" = NOW();
+INSERT INTO "Counter" (id, "trailId", name, kind, "reviewIntervalDays", "createdAt", "updatedAt")
+VALUES (
+  'seedcounterharbor',
+  (SELECT id FROM "Trail" WHERE slug = 'harbor-path'),
+  'Harbor counter',
+  'TRAIL',
+  365,
+  NOW(),
+  NOW()
+)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, kind = EXCLUDED.kind;
+DELETE FROM "CounterReading" WHERE "counterId" = 'seedcounterharbor' AND id <> 'seedreadingharbor';
+INSERT INTO "CounterReading" (id, "counterId", "recordedOn", count, "createdAt")
+VALUES ('seedreadingharbor', 'seedcounterharbor', DATE '2026-11-01', 1240, NOW())
+ON CONFLICT (id) DO UPDATE SET "recordedOn" = EXCLUDED."recordedOn", count = EXCLUDED.count;
 INSERT INTO "User" (id, email, name, role, "isActive", "createdAt")
 VALUES ('seedmapeditor', 'map-editor@example.com', 'Map editor', 'EDITOR', true, NOW())
 ON CONFLICT (email) DO NOTHING;

@@ -1,10 +1,10 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ASSET_KIND_LABELS, assetKinds } from 'shared/kinds';
+import { ASSET_KIND_LABELS, COUNTER_KIND_LABELS, assetKinds, counterKinds } from 'shared/kinds';
 import { api, ApiError } from '../api';
 import { TrailMap, type MapLine, type MapPoint } from '../features/map/TrailMap';
-import { Field, FreshnessBadge, buttonClass, formatDay, inputClass } from '../ui';
+import { Field, FreshnessBadge, buttonClass, formatCount, formatDay, inputClass } from '../ui';
 import type { Freshness } from 'shared';
 
 type TrailDetail = {
@@ -23,6 +23,13 @@ type TrailDetail = {
   }[];
   freshness: Freshness;
   reviewedAt: string | null;
+  counters: {
+    id: string;
+    name: string;
+    kind: string;
+    notes: string | null;
+    latest: { recordedOn: string; count: number } | null;
+  }[];
   workdays: {
     id: string;
     title: string;
@@ -32,6 +39,13 @@ type TrailDetail = {
     hostOrg: { slug: string; name: string } | null;
   }[];
 };
+
+function counterKindName(kind: string): string {
+  if ((counterKinds as readonly string[]).includes(kind)) {
+    return COUNTER_KIND_LABELS[kind as (typeof counterKinds)[number]];
+  }
+  return kind;
+}
 
 function kindName(kind: string): string {
   if ((assetKinds as readonly string[]).includes(kind)) {
@@ -131,6 +145,27 @@ export function TrailPage() {
         ) : (
           <p>No maintenance owner is named yet.</p>
         )}
+      </section>
+      <section className="space-y-2">
+        <h2 className="font-semibold text-navy">Counts</h2>
+        {data.counters.length === 0 ? <p>No counter is listed.</p> : null}
+        <ul className="space-y-2">
+          {data.counters.map((counter) => (
+            <li key={counter.id} className="rounded border border-line bg-card p-3">
+              <p className="font-medium">
+                {counter.name} · {counterKindName(counter.kind)}
+              </p>
+              {counter.latest ? (
+                <p>
+                  {formatCount(counter.latest.count)} visits recorded on {formatDay(counter.latest.recordedOn)}
+                </p>
+              ) : (
+                <p>No count yet.</p>
+              )}
+              {counter.notes ? <p className="text-sm">{counter.notes}</p> : null}
+            </li>
+          ))}
+        </ul>
       </section>
       <section className="space-y-2">
         <h2 className="font-semibold text-navy">Planned work</h2>

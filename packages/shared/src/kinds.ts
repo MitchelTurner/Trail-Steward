@@ -24,6 +24,13 @@ export const assetKinds = ['TRAILHEAD', 'BRIDGE', 'CULVERT', 'SIGN', 'OTHER'] as
 export const issueStatuses = ['OPEN', 'CLOSED'] as const;
 export const workdayStatuses = ['PLANNED', 'DONE', 'CANCELED'] as const;
 export const changeRequestStatuses = ['OPEN', 'ACCEPTED', 'REJECTED'] as const;
+export const counterKinds = ['TRAIL', 'CABIN', 'OTHER'] as const;
+
+export const COUNTER_KIND_LABELS: Record<(typeof counterKinds)[number], string> = {
+  TRAIL: 'Trail counter',
+  CABIN: 'Cabin count',
+  OTHER: 'Other count',
+};
 
 export const ASSET_KIND_LABELS: Record<(typeof assetKinds)[number], string> = {
   TRAILHEAD: 'Trailhead',

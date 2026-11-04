@@ -31,6 +31,13 @@ const trailInclude = {
     include: { hostOrg: { select: { slug: true, name: true } } },
     orderBy: { workDate: 'asc' as const },
   },
+  counters: {
+    include: {
+      maintainer: true,
+      readings: { orderBy: [{ recordedOn: 'desc' as const }, { createdAt: 'desc' as const }], take: 12 },
+    },
+    orderBy: { name: 'asc' as const },
+  },
 } satisfies Prisma.TrailInclude;
 
 type TrailRow = Prisma.TrailGetPayload<{ include: typeof trailInclude }>;
@@ -71,6 +78,34 @@ function presentTrail(trail: TrailRow, detailed: boolean) {
         status: day.status,
         hostOrg: day.hostOrg,
       })),
+    counters: trail.counters.map((counter) => {
+      const latest = counter.readings[0];
+      return {
+        id: counter.id,
+        name: counter.name,
+        kind: counter.kind,
+        notes: counter.notes,
+        latest: latest
+          ? {
+              id: latest.id,
+              recordedOn: latest.recordedOn.toISOString().slice(0, 10),
+              count: latest.count,
+              notes: latest.notes,
+            }
+          : null,
+        ...(detailed
+          ? {
+              readings: counter.readings.map((reading) => ({
+                id: reading.id,
+                recordedOn: reading.recordedOn.toISOString().slice(0, 10),
+                count: reading.count,
+                notes: reading.notes,
+              })),
+            }
+          : {}),
+        ...reviewFields(counter, counter.maintainer, detailed),
+      };
+    }),
     assets: trail.assets.map((asset) => ({
       id: asset.id,
       name: asset.name,

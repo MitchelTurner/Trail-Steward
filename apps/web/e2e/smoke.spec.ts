@@ -50,6 +50,8 @@ test('the map opens a trail and takes a problem report', async ({ page }) => {
   await page.getByRole('listitem').getByRole('link', { name: 'Harbor path' }).click();
   await expect(page.getByRole('heading', { name: 'Harbor path' })).toBeVisible();
   await expect(page.getByText('Harbor bridge · Bridge')).toBeVisible();
+  await expect(page.getByText('Harbor counter · Trail counter')).toBeVisible();
+  await expect(page.getByText('1,240 visits recorded on November 1, 2026')).toBeVisible();
   await expect(page.getByText('November 18, 2026 — Harbor cleanup')).toBeVisible();
   await page.getByLabel('Short title').fill('Washout');
   await page.getByLabel('What is wrong').fill('The bridge approach is gone.');
@@ -80,6 +82,12 @@ test('an editor publishes a trail from the form', async ({ page }) => {
   expect(packet.headers()['content-type']).toContain('application/pdf');
   await page.goto('/admin/changes');
   await expect(page.getByText('The line should follow the dock.').first()).toBeVisible();
+  await page.goto('/admin/trails/edit/harbor-path');
+  await expect(page.getByText('Harbor counter · Trail counter')).toBeVisible();
+  await page.getByRole('textbox', { name: 'Count date' }).fill('2026-11-02');
+  await page.getByRole('spinbutton', { name: 'Count', exact: true }).fill('40');
+  await page.getByRole('button', { name: 'Add count', exact: true }).click();
+  await expect(page.getByText('Latest: 40 visits on November 2, 2026')).toBeVisible();
   await page.goto('/admin/trails/new');
   await page.getByLabel('Name').fill('Playwright creek');
   await page.getByLabel(/^Line/).fill('-135.40, 57.10\n-135.35, 57.12');

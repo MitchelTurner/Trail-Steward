@@ -9,6 +9,7 @@ export type WorkListModel = {
   issues: { title: string; detail: string; owner: string }[];
   workdays: { workDate: string; title: string; host: string; notes: string }[];
   changes: { message: string }[];
+  counts: { label: string }[];
 };
 
 const styles = StyleSheet.create({
@@ -56,6 +57,13 @@ function WorkListDocument({ model }: { model: WorkListModel }) {
             <Text style={styles.body}>Host: {day.host}</Text>
             {day.notes ? <Text style={styles.body}>{day.notes}</Text> : null}
           </View>
+        ))}
+        <Text style={styles.heading}>Latest counts</Text>
+        {model.counts.length === 0 ? <Text>None.</Text> : null}
+        {model.counts.map((count) => (
+          <Text key={count.label} style={styles.item}>
+            {count.label}
+          </Text>
         ))}
         <Text style={styles.heading}>Open map changes</Text>
         {model.changes.length === 0 ? <Text>None.</Text> : null}

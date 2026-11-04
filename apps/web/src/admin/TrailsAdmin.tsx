@@ -2,11 +2,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { lineStringSchema, pointSchema, type GeoPoint, type LineString } from 'shared';
-import { ASSET_KIND_LABELS, assetKinds, contentStatuses, visibilities } from 'shared/kinds';
+import {
+  ASSET_KIND_LABELS,
+  COUNTER_KIND_LABELS,
+  assetKinds,
+  contentStatuses,
+  counterKinds,
+  visibilities,
+} from 'shared/kinds';
 import { api, ApiError } from '../api';
 import type { MapLine, MapPoint } from '../features/map/TrailMap';
 import type { OrgListItem, Page } from '../types';
-import { Field, buttonClass, formatDay, inputClass } from '../ui';
+import { Field, FreshnessBadge, buttonClass, formatCount, formatDay, inputClass } from '../ui';
 
 type TrailRow = {
   id: string;
@@ -32,6 +39,16 @@ type TrailRow = {
     workDate: string;
     status: string;
     hostOrg: { name: string } | null;
+  }[];
+  counters: {
+    id: string;
+    name: string;
+    kind: string;
+    notes: string | null;
+    latest: { id: string; recordedOn: string; count: number } | null;
+    readings?: { id: string; recordedOn: string; count: number }[];
+    freshness: 'current' | 'due' | 'stale' | 'never-reviewed';
+    reviewedAt: string | null;
   }[];
 };
 
@@ -236,6 +253,7 @@ export function TrailForm() {
       {data ? (
         <WorkdayEditor slug={data.slug} workdays={data.workdays} orgs={orgs.data?.items ?? []} />
       ) : null}
+      {data ? <CounterEditor slug={data.slug} counters={data.counters} /> : null}
       {data ? (
         <a className={buttonClass('quiet')} href={`/api/trails/${data.slug}/packet`}>
           Download work list
@@ -434,6 +452,136 @@ function WorkdayEditor({
         {error ? <p className="text-stale">{error}</p> : null}
         <button className={buttonClass('quiet')} type="submit" disabled={add.isPending}>
           Add work day
+        </button>
+      </form>
+    </section>
+  );
+}
+
+function CounterEditor({ slug, counters }: { slug: string; counters: TrailRow['counters'] }) {
+  const client = useQueryClient();
+  const [error, setError] = useState('');
+  const refresh = async () => {
+    await client.invalidateQueries({ queryKey: ['trail', 'manage', slug] });
+    await client.invalidateQueries({ queryKey: ['dashboard'] });
+  };
+  const add = useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      api(`/api/trails/${slug}/counters`, { method: 'POST', body: JSON.stringify(body) }),
+    onSuccess: async () => {
+      setError('');
+      await refresh();
+    },
+    onError: (err: unknown) => {
+      setError(err instanceof ApiError ? err.message : 'Could not add that counter.');
+    },
+  });
+  const addReading = useMutation({
+    mutationFn: (body: { id: string; recordedOn: string; count: number }) =>
+      api(`/api/trails/${slug}/counters/${body.id}/readings`, {
+        method: 'POST',
+        body: JSON.stringify({ recordedOn: body.recordedOn, count: body.count }),
+      }),
+    onSuccess: async () => {
+      setError('');
+      await refresh();
+    },
+    onError: (err: unknown) => {
+      setError(err instanceof ApiError ? err.message : 'Could not save that count.');
+    },
+  });
+  const review = useMutation({
+    mutationFn: (id: string) => api(`/api/trails/${slug}/counters/${id}/review`, { method: 'POST' }),
+    onSuccess: refresh,
+  });
+
+  function onAdd(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    add.mutate(
+      {
+        name: String(data.get('name') ?? ''),
+        kind: String(data.get('kind') ?? 'TRAIL'),
+        notes: String(data.get('notes') ?? ''),
+      },
+      { onSuccess: () => form.reset() },
+    );
+  }
+
+  return (
+    <section className="space-y-3">
+      <h3 className="font-semibold text-navy">Counters</h3>
+      <p className="text-sm">Enter the number from the counter for that date. It is not added to older numbers.</p>
+      <ul className="space-y-3">
+        {counters.map((counter) => (
+          <li key={counter.id} className="space-y-2 rounded border border-line p-3">
+            <p className="font-medium">
+              {counter.name} · {COUNTER_KIND_LABELS[counter.kind as (typeof counterKinds)[number]] ?? counter.kind}
+            </p>
+            <FreshnessBadge value={counter.freshness} reviewedAt={counter.reviewedAt} />
+            {counter.latest ? (
+              <p>
+                Latest: {formatCount(counter.latest.count)} visits on {formatDay(counter.latest.recordedOn)}
+              </p>
+            ) : (
+              <p>No count yet.</p>
+            )}
+            <form
+              className="flex flex-wrap items-end gap-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const data = new FormData(event.currentTarget);
+                const count = Number(data.get('count'));
+                if (!Number.isInteger(count) || count < 0) {
+                  setError('Enter a whole number of visits.');
+                  return;
+                }
+                addReading.mutate(
+                  {
+                    id: counter.id,
+                    recordedOn: String(data.get('recordedOn') ?? ''),
+                    count,
+                  },
+                  { onSuccess: () => event.currentTarget.reset() },
+                );
+              }}
+            >
+              <Field label="Count date">
+                <input className={inputClass} name="recordedOn" type="date" required />
+              </Field>
+              <Field label="Count">
+                <input className={inputClass} name="count" type="number" min={0} required />
+              </Field>
+              <button className={buttonClass('quiet')} type="submit" disabled={addReading.isPending}>
+                Add count
+              </button>
+            </form>
+            <button className={buttonClass('quiet')} type="button" onClick={() => review.mutate(counter.id)}>
+              Mark reviewed
+            </button>
+          </li>
+        ))}
+      </ul>
+      <form className="max-w-xl space-y-3" onSubmit={onAdd}>
+        <Field label="Counter name">
+          <input className={inputClass} name="name" required />
+        </Field>
+        <Field label="Counter kind">
+          <select className={inputClass} name="kind" defaultValue="TRAIL">
+            {counterKinds.map((kind) => (
+              <option key={kind} value={kind}>
+                {COUNTER_KIND_LABELS[kind]}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Counter notes">
+          <input className={inputClass} name="notes" />
+        </Field>
+        {error ? <p className="text-stale">{error}</p> : null}
+        <button className={buttonClass('quiet')} type="submit" disabled={add.isPending}>
+          Add counter
         </button>
       </form>
     </section>

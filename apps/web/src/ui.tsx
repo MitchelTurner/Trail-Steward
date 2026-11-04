@@ -87,6 +87,10 @@ export function WrongLink({ type, id }: { type: string; id?: string }) {
   );
 }
 
+export function formatCount(value: number): string {
+  return new Intl.NumberFormat('en-US').format(value);
+}
+
 export function formatDay(value: string): string {
   const [year, month, day] = value.slice(0, 10).split('-').map(Number);
   return new Intl.DateTimeFormat('en-US', {

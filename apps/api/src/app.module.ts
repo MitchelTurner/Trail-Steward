@@ -9,6 +9,7 @@ import { AdminModule } from './modules/admin.module';
 import { AuditModule } from './modules/audit.module';
 import { AuthModule } from './modules/auth.module';
 import { ChecklistsModule } from './modules/checklists.module';
+import { CountersModule } from './modules/counters.module';
 import { HealthModule } from './modules/health.module';
 import { IssuesModule } from './modules/issues.module';
 import { MaintenanceModule } from './modules/maintenance.module';
@@ -80,6 +81,7 @@ export class CoreModule {}
     TrailsModule,
     IssuesModule,
     MaintenanceModule,
+    CountersModule,
     ChecklistsModule,
     SuggestionsModule,
     AuthModule,
@@ -96,4 +98,4 @@ export class CoreModule {}
 })
 export class AppModule {}
 
-// Later: trail counters. File storage is still not in this app.
+// File storage is still not in this app.

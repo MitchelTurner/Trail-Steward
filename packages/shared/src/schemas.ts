@@ -4,6 +4,7 @@ import {
   assetKinds,
   changeRequestStatuses,
   contentStatuses,
+  counterKinds,
   orgKinds,
   userRoles,
   visibilities,
@@ -12,10 +13,12 @@ import {
 
 export {
   ASSET_KIND_LABELS,
+  COUNTER_KIND_LABELS,
   ORG_KIND_LABELS,
   assetKinds,
-  contentStatuses,
   changeRequestStatuses,
+  contentStatuses,
+  counterKinds,
   issueStatuses,
   linkStatuses,
   orgKinds,
@@ -196,6 +199,19 @@ export const changeRequestCreateSchema = z.object({
   message: z.string().trim().min(1).max(4000),
   submitterName: z.string().trim().max(200).optional(),
   fax: z.string().optional(),
+});
+
+export const counterWriteSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  kind: z.enum(counterKinds),
+  notes: z.string().trim().max(2000).optional(),
+  reviewIntervalDays: z.number().int().positive().max(3650).optional(),
+});
+
+export const counterReadingSchema = z.object({
+  recordedOn: calendarDay,
+  count: z.number().int().nonnegative().max(10_000_000),
+  notes: z.string().trim().max(2000).optional(),
 });
 
 export const changeRequestResolveSchema = z.object({
