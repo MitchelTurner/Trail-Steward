@@ -6,7 +6,12 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('./dist', import.meta.url));
 const port = Number(process.env.PORT || 4173);
-const upstream = new URL(process.env.API_UPSTREAM || process.env.API_BASE_URL || 'http://127.0.0.1:3000');
+const onRailway = Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID);
+const upstream = new URL(
+  onRailway
+    ? await (await import('./ensure-api.mjs')).ensureApiUpstream()
+    : process.env.API_UPSTREAM || process.env.API_BASE_URL || 'http://127.0.0.1:3000',
+);
 const forward = upstream.protocol === 'https:' ? httpsRequest : httpRequest;
 
 const types = {

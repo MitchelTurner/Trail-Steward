@@ -1,7 +1,7 @@
 # tsc reads shared from its built types. Compile that package before the web app.
 [build]
 builder = "RAILPACK"
-buildCommand = "pnpm --filter shared build && pnpm --filter web exec tsc -p tsconfig.json --noEmit && pnpm --filter web exec vite build"
+buildCommand = "pnpm --filter api build && pnpm --filter web exec tsc -p tsconfig.json --noEmit && pnpm --filter web exec vite build"
 watchPatterns = [
   "apps/web/**",
   "packages/shared/**",

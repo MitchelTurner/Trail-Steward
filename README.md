@@ -63,7 +63,7 @@ One service each for `web`, `api`, `worker`, Postgres, and Redis. Railpack build
 
 Deploy the latest `main` commit. A log whose archive is 820 KB is the original Phase 1 snapshot: its web build script is `tsc` and it never compiles `shared`. Redeploy on that failed deployment repeats it. The current `main` archive is larger, and the web build script starts with `pnpm --filter shared build`.
 
-The web service listens on Railway's `PORT` and proxies `/api` to `API_UPSTREAM` (or `API_BASE_URL`). Set `API_UPSTREAM` on the web service to the API private URL, including the port. The intended start command is `pnpm --filter web start`, which serves the built files. If the service is still running Vite, Vite allows `*.up.railway.app` and the `APP_BASE_URL` host while `RAILWAY_ENVIRONMENT` is set. Local Vite does not add that allowlist.
+The web service listens on Railway's `PORT` and proxies `/api` to `API_UPSTREAM` (or `API_BASE_URL`). Set `API_UPSTREAM` on the web service to the API private URL, including the port. If that address is unset or is not the trails API, the web process starts the API on `127.0.0.1:3000` and applies database migrations. The web service needs `DATABASE_URL` and `REDIS_URL` for that. The intended start command is `pnpm --filter web start`, which serves the built files. If the service is still running Vite, Vite allows `*.up.railway.app` and the `APP_BASE_URL` host while `RAILWAY_ENVIRONMENT` is set. Local Vite does not add that allowlist.
 
 The Postgres service must provide PostGIS (`postgis/postgis:16-3.4`). Railway's default Postgres does not. The API release command runs `CREATE EXTENSION postgis` and exits if that extension is missing.
 
