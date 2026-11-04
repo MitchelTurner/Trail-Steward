@@ -12,4 +12,5 @@ blob-report
 .DS_Store
 apps/web/dist
 *.log
+dump.rdb
 data/local-*.xlsx

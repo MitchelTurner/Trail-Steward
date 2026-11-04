@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "build": "tsc",
+    "build": "pnpm --filter shared build && pnpm --filter db build && tsc",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

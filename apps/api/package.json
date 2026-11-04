@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "nest start --watch",
-    "build": "nest build",
+    "build": "pnpm --filter shared build && pnpm --filter db build && nest build",
     "start": "node dist/main.js",
     "typecheck": "tsc -p tsconfig.build.json --noEmit",
     "test": "vitest run",
