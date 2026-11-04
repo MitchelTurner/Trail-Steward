@@ -8,6 +8,10 @@ import { redisOptions } from './tokens';
 export class RedisService extends Redis implements OnModuleDestroy {
   constructor(@Inject(ENV) env: ServerEnv) {
     super(redisOptions(env.REDIS_URL));
+    // ioredis emits 'error' and Node exits when nothing is listening.
+    this.on('error', (error: Error) => {
+      console.error(`Redis error: ${error.message}`);
+    });
   }
 
   async onModuleDestroy(): Promise<void> {

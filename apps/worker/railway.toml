@@ -9,6 +9,7 @@ watchPatterns = [
   "pnpm-lock.yaml",
   "pnpm-workspace.yaml",
   "package.json",
+  "railpack.json",
 ]
 
 [deploy]

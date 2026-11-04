@@ -236,7 +236,13 @@ export const serverEnvSchema = z.object({
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
 export function loadServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv {
-  const parsed = serverEnvSchema.safeParse(source);
+  const env: NodeJS.ProcessEnv = {
+    ...source,
+    DATABASE_URL: source.DATABASE_URL || source.DATABASE_PRIVATE_URL,
+    REDIS_URL: source.REDIS_URL || source.REDIS_PRIVATE_URL,
+    TZ: source.TZ || 'America/Anchorage',
+  };
+  const parsed = serverEnvSchema.safeParse(env);
   if (!parsed.success) {
     const details = parsed.error.issues
       .map((issue) => `${issue.path.join('.') || 'env'}: ${issue.message}`)

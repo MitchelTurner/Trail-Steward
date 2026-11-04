@@ -7,6 +7,7 @@ import {
   Get,
   Module,
   NotFoundException,
+  OnModuleInit,
   Param,
   Post,
   UploadedFile,
@@ -21,11 +22,17 @@ export const IMPORT_QUEUE = 'import-guide';
 
 @Controller('admin')
 @Roles('ADMIN')
-export class AdminController {
+export class AdminController implements OnModuleInit {
   constructor(
     @InjectQueue(IMPORT_QUEUE) private readonly imports: Queue,
     private readonly review: ReviewService,
   ) {}
+
+  onModuleInit(): void {
+    this.imports.on('error', (error: Error) => {
+      console.error(`Redis queue error: ${error.message}`);
+    });
+  }
 
   @Post('import')
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 15 * 1024 * 1024 } }))

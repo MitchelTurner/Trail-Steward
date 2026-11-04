@@ -59,13 +59,29 @@ A downloaded backup can also be restored with `pg_restore` into an empty databas
 
 One service each for `web`, `api`, `worker`, Postgres, and Redis. Railpack builds from the repository root.
 
-`apps/api/railway.toml` compiles `shared` and `db`, then the API, and runs `prisma migrate deploy` before the API listens. The health check path is `/api/health`. `apps/worker/railway.toml` compiles the same packages, then the worker. A build log that runs `nest build` by itself is an older snapshot. Redeploy the API from the latest `main`.
+`apps/api/railway.toml` compiles `shared` and `db`, then the API, and runs `prisma migrate deploy` before the API listens. The health check path is `/api/health`. `apps/worker/railway.toml` compiles the same packages, then the worker. `railpack.json` installs OpenSSL in the image. Prisma's engine needs `libssl.so.3`, and without it both the API and the worker exit as soon as they start.
+
+Deploy the latest `main` commit. Redeploy on an older failed deployment repeats that snapshot.
+
+The Postgres service must provide PostGIS (`postgis/postgis:16-3.4`). Railway's default Postgres does not. The API release command runs `CREATE EXTENSION postgis` and exits if that extension is missing.
+
+Set these variables on both the API and the worker. `TZ` defaults to `America/Anchorage` when it is unset. `DATABASE_PRIVATE_URL` and `REDIS_PRIVATE_URL` are used when `DATABASE_URL` or `REDIS_URL` is unset.
+
+- `DATABASE_URL`
+- `REDIS_URL`
+- `JWT_SECRET` (at least 16 characters)
+- `RESEND_API_KEY`
+- `EMAIL_FROM`
+- `APP_BASE_URL` (public web URL)
+- `API_BASE_URL` (public API URL)
+
+A crash that prints `Invalid environment` is one of those values. The next lines name the missing ones.
 
 The Dockerfiles in `apps/web`, `apps/api`, and `apps/worker` do those same steps when a service uses the Dockerfile builder.
 
 The web container proxies `/api` to `API_UPSTREAM` (default `http://api:3000`). On Railway, set `API_UPSTREAM` to the API service's private URL, including the port. The browser talks to the web origin only, so the session cookie stays on that site.
 
-Set `APP_BASE_URL` to the public web URL and `API_BASE_URL` to the public API URL. Set `TZ=America/Anchorage` on the worker so the Monday link check (03:00), review reminders (08:00), and monthly checklist cleanup use Alaska time.
+The Monday link check (03:00), review reminders (08:00), and monthly checklist cleanup use America/Anchorage.
 
 This environment does not ship with Railway credentials, so production deploy and the production seed stay a manual step after the services exist.
 

@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { Processor, WorkerHost } from '@nestjs/bullmq';
+import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import type { Job } from 'bullmq';
 import { PrismaClient, importGuideFromBuffer } from 'db';
 import { freshness } from 'shared';
@@ -10,12 +10,19 @@ import { EmailService } from './email.service';
 
 const log = new Logger('Jobs');
 
+abstract class JobWorker extends WorkerHost {
+  @OnWorkerEvent('error')
+  onRedisError(error: Error): void {
+    log.error(error.message);
+  }
+}
+
 function summary(queue: string, extra: Record<string, unknown>): void {
   log.log(JSON.stringify({ queue, ...extra }));
 }
 
 @Processor('link-check')
-export class LinkCheckProcessor extends WorkerHost {
+export class LinkCheckProcessor extends JobWorker {
   constructor(private readonly prisma: PrismaClient) {
     super();
   }
@@ -58,7 +65,7 @@ export class LinkCheckProcessor extends WorkerHost {
 }
 
 @Processor('review-reminders')
-export class ReviewReminderProcessor extends WorkerHost {
+export class ReviewReminderProcessor extends JobWorker {
   constructor(
     private readonly prisma: PrismaClient,
     private readonly email: EmailService,
@@ -133,7 +140,7 @@ export class ReviewReminderProcessor extends WorkerHost {
 }
 
 @Processor('checklist-cleanup')
-export class ChecklistCleanupProcessor extends WorkerHost {
+export class ChecklistCleanupProcessor extends JobWorker {
   constructor(private readonly prisma: PrismaClient) {
     super();
   }
@@ -151,7 +158,7 @@ export class ChecklistCleanupProcessor extends WorkerHost {
 type ImportPayload = { filename?: string; contentBase64?: string };
 
 @Processor('import-guide')
-export class ImportGuideProcessor extends WorkerHost {
+export class ImportGuideProcessor extends JobWorker {
   constructor(private readonly prisma: PrismaClient) {
     super();
   }

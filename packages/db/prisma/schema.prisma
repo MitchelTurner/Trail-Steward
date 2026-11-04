@@ -1,6 +1,8 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
+  // Railway's image is Debian. Prisma's query engine needs the OpenSSL 3 build.
+  binaryTargets   = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {

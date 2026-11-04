@@ -33,10 +33,13 @@ async function bootstrap(): Promise<void> {
   configureHttp(app);
   const env = app.get<ServerEnv>(ENV);
   const port = env.PORT ?? 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   Logger.log(`API listening on ${port}`, 'Bootstrap');
 }
 
 if (process.env.NODE_ENV !== 'test') {
-  void bootstrap();
+  void bootstrap().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
 }

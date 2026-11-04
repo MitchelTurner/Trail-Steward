@@ -17,5 +17,8 @@ async function bootstrap(): Promise<void> {
 }
 
 if (process.env.NODE_ENV !== 'test') {
-  void bootstrap();
+  void bootstrap().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
 }
