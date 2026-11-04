@@ -61,7 +61,9 @@ One service each for `web`, `api`, `worker`, Postgres, and Redis. Railpack build
 
 `apps/api/railway.toml` compiles `shared` and `db`, then the API, and runs `prisma migrate deploy` before the API listens. The health check path is `/api/health`. `apps/worker/railway.toml` compiles the same packages, then the worker. `railpack.json` installs OpenSSL in the image. Prisma's engine needs `libssl.so.3`, and without it both the API and the worker exit as soon as they start.
 
-Deploy the latest `main` commit. Redeploy on an older failed deployment repeats that snapshot.
+Deploy the latest `main` commit. A log whose archive is 820 KB is the original Phase 1 snapshot: its web build script is `tsc` and it never compiles `shared`. Redeploy on that failed deployment repeats it. The current `main` archive is larger, and the web build script starts with `pnpm --filter shared build`.
+
+The web service listens on Railway's `PORT` and proxies `/api` to `API_UPSTREAM` (or `API_BASE_URL`). Set `API_UPSTREAM` on the web service to the API private URL, including the port.
 
 The Postgres service must provide PostGIS (`postgis/postgis:16-3.4`). Railway's default Postgres does not. The API release command runs `CREATE EXTENSION postgis` and exits if that extension is missing.
 
@@ -79,7 +81,7 @@ A crash that prints `Invalid environment` is one of those values. The next lines
 
 The Dockerfiles in `apps/web`, `apps/api`, and `apps/worker` do those same steps when a service uses the Dockerfile builder.
 
-The web container proxies `/api` to `API_UPSTREAM` (default `http://api:3000`). On Railway, set `API_UPSTREAM` to the API service's private URL, including the port. The browser talks to the web origin only, so the session cookie stays on that site.
+The browser talks to the web origin only, so the session cookie stays on that site. The Docker image proxies `/api` the same way, with `API_UPSTREAM` defaulting to `http://api:3000`.
 
 The Monday link check (03:00), review reminders (08:00), and monthly checklist cleanup use America/Anchorage.
 

@@ -8,6 +8,7 @@
     "build": "pnpm --filter shared build && tsc -p tsconfig.json --noEmit && vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "preview": "vite preview",
+    "start": "node serve.mjs",
     "test": "pnpm --filter api build && playwright test",
     "lint": "eslint src"
   },
