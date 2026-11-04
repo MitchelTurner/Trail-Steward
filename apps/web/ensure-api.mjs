@@ -55,11 +55,6 @@ async function startLocalApi() {
       return false;
     }
   }
-  const migrated = await run(['--filter', 'db', 'exec', 'prisma', 'migrate', 'deploy'], env);
-  if (migrated !== 0) {
-    console.error('The map API database migration did not finish.');
-    return false;
-  }
   const child = spawn('pnpm', ['--filter', 'api', 'start'], {
     cwd: repoRoot,
     env,

@@ -35,7 +35,7 @@ async function bootstrap(): Promise<void> {
     process.exit(1);
   }
   try {
-    migrateDatabase();
+    await migrateDatabase();
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
   }

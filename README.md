@@ -65,7 +65,7 @@ Deploy the latest `main` commit. A log whose archive is 820 KB is the original P
 
 The web service listens on Railway's `PORT` and proxies `/api` to `API_UPSTREAM` (or `API_BASE_URL`). Set `API_UPSTREAM` on the web service to the API private URL, including the port. If that address is unset or is not the trails API, the web process starts the API on `127.0.0.1:3000` and applies database migrations. The web service needs `DATABASE_URL` and `REDIS_URL` for that. The intended start command is `pnpm --filter web start`, which serves the built files. If the service is still running Vite, Vite allows `*.up.railway.app` and the `APP_BASE_URL` host while `RAILWAY_ENVIRONMENT` is set. Local Vite does not add that allowlist.
 
-The Postgres service must provide PostGIS (`postgis/postgis:16-3.4`). Railway's default Postgres does not. The API release command runs `CREATE EXTENSION postgis` and exits if that extension is missing.
+The Postgres service should provide PostGIS (`postgis/postgis:16-3.4`) so trail lines can be stored as geometry. Railway's default Postgres does not. The directory, including topics, still migrates and loads without that extension. Trail geometry is added when PostGIS is installed.
 
 Linking Postgres fills `DATABASE_URL` only. Reference the Redis service `REDIS_URL` on the API and the worker. `TZ` defaults to `America/Anchorage`. Host variables `REDISHOST`, `REDISPORT`, `REDISUSER`, and `REDISPASSWORD` are used when `REDIS_URL` itself is unset.
 
