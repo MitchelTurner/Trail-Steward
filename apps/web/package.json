@@ -9,7 +9,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "preview": "vite preview",
     "start": "node serve.mjs",
-    "test": "node --test railway-hosts.test.mjs api-upstream.test.mjs && pnpm --filter api build && playwright test",
+    "test": "node --experimental-strip-types --test railway-hosts.test.mjs api-upstream.test.mjs map-tiles.test.ts && pnpm --filter api build && playwright test",
     "lint": "eslint src"
   },
   "dependencies": {

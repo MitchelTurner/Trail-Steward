@@ -6,7 +6,7 @@ Phase 1 is the planning navigator. Phase 2 adds the trail map. Phase 3 is the ma
 
 ## Map
 
-A trail is a line of longitude, latitude pairs. A place on a trail is a point: trailhead, bridge, culvert, sign, or other. PostGIS stores the same shape so the map can ask which trails cross a box. The public map is a drawing of those lines, not a street basemap.
+A trail is a line of longitude, latitude pairs. A place on a trail is a point: trailhead, bridge, culvert, sign, or other. PostGIS stores the same shape so the map can ask which trails cross a box. The public map draws those lines and places on a topographic map image.
 
 Published public trails show on `/map` and `/trails/:slug`. Drafts stay in the editor. Anyone can report a problem. The report lands as an unowned issue until an editor names an organization or closes it.
 

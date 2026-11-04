@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ASSET_KIND_LABELS, assetKinds } from 'shared/kinds';
+import { mapFrame, mapTiles, project } from './map-tiles';
 
 function kindName(kind: string): string {
   if ((assetKinds as readonly string[]).includes(kind)) {
@@ -46,56 +47,97 @@ export function boundsFor(trails: MapTrail[]): Bounds {
   return { west: west - padX, east: east + padX, south: south - padY, north: north + padY };
 }
 
-function place(lng: number, lat: number, bounds: Bounds, width: number, height: number) {
-  return {
-    x: ((lng - bounds.west) / (bounds.east - bounds.west)) * width,
-    y: ((bounds.north - lat) / (bounds.north - bounds.south)) * height,
-  };
-}
-
 export function TrailMap({ trails }: { trails: MapTrail[] }) {
-  const width = 800;
-  const height = 460;
   const bounds = boundsFor(trails);
+  const frame = mapFrame(bounds);
+  const tiles = mapTiles(bounds, frame);
   return (
-    <svg
-      viewBox={`0 0 ${width} ${height}`}
-      role="img"
-      aria-label="Map of trails"
-      className="w-full rounded border border-line bg-card"
-    >
-      <rect width={width} height={height} fill="#f6f3ec" />
-      {trails.map((trail) => {
-        if (!trail.line) return null;
-        const points = trail.line.coordinates
-          .map(([lng, lat]) => {
-            const spot = place(lng, lat, bounds, width, height);
-            return `${spot.x},${spot.y}`;
-          })
-          .join(' ');
-        return (
-          <Link key={trail.slug} to={`/trails/${trail.slug}`}>
-            <polyline points={points} fill="none" stroke="#1b365d" strokeWidth={4} strokeLinejoin="round">
-              <title>{trail.name}</title>
-            </polyline>
-          </Link>
-        );
-      })}
-      {trails.flatMap((trail) =>
-        trail.assets.map((asset) => {
-          if (!asset.point) return null;
-          const spot = place(asset.point.coordinates[0], asset.point.coordinates[1], bounds, width, height);
+    <figure className="space-y-1">
+      <svg
+        viewBox={`0 0 ${frame.width} ${frame.height}`}
+        role="img"
+        aria-label="Map of trails"
+        className="w-full rounded border border-line bg-[#d7e6f2]"
+      >
+        {tiles.map((tile) => (
+          <image
+            key={`${tile.z}-${tile.x}-${tile.y}`}
+            href={tile.url}
+            x={tile.left}
+            y={tile.top}
+            width={tile.width}
+            height={tile.height}
+            preserveAspectRatio="none"
+            pointerEvents="none"
+          />
+        ))}
+        {trails.map((trail) => {
+          if (!trail.line) return null;
+          const points = trail.line.coordinates
+            .map(([lng, lat]) => {
+              const spot = project(lng, lat, bounds, frame.width, frame.height);
+              return `${spot.x},${spot.y}`;
+            })
+            .join(' ');
           return (
-            <Link key={asset.id} to={`/trails/${trail.slug}`}>
-              <circle cx={spot.x} cy={spot.y} r={6} fill="#1f6b4a">
-                <title>
-                  {asset.name} ({kindName(asset.kind)})
-                </title>
-              </circle>
+            <Link key={trail.slug} to={`/trails/${trail.slug}`}>
+              <polyline
+                points={points}
+                fill="none"
+                stroke="#ffffff"
+                strokeWidth={8}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+              <polyline
+                points={points}
+                fill="none"
+                stroke="#1b365d"
+                strokeWidth={4}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              >
+                <title>{trail.name}</title>
+              </polyline>
             </Link>
           );
-        }),
-      )}
-    </svg>
+        })}
+        {trails.flatMap((trail) =>
+          trail.assets.map((asset) => {
+            if (!asset.point) return null;
+            const spot = project(
+              asset.point.coordinates[0],
+              asset.point.coordinates[1],
+              bounds,
+              frame.width,
+              frame.height,
+            );
+            return (
+              <Link key={asset.id} to={`/trails/${trail.slug}`}>
+                <circle
+                  cx={spot.x}
+                  cy={spot.y}
+                  r={7}
+                  fill="#1f6b4a"
+                  stroke="#ffffff"
+                  strokeWidth={2}
+                >
+                  <title>
+                    {asset.name} ({kindName(asset.kind)})
+                  </title>
+                </circle>
+              </Link>
+            );
+          }),
+        )}
+      </svg>
+      <figcaption className="text-sm text-muted">
+        Map image from{' '}
+        <a href="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer">
+          Esri World Topographic Map
+        </a>
+        . Sources: Esri, USGS, NOAA, and OpenStreetMap contributors.
+      </figcaption>
+    </figure>
   );
 }
