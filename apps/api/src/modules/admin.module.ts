@@ -42,7 +42,7 @@ export class AdminController implements OnModuleInit {
     const name = file.originalname ?? 'guide.xlsx';
     if (!name.toLowerCase().endsWith('.xlsx'))
       throw new BadRequestException('The file must be an .xlsx workbook.');
-    // TODO(spec): Phase 1 has no file storage. The workbook travels in the job payload.
+    // The import workbook still travels in the job. Trail files are a separate store.
     const job = await this.imports.add('import', {
       filename: name,
       contentBase64: file.buffer.toString('base64'),

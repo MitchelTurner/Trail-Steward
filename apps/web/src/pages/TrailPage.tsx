@@ -30,6 +30,7 @@ type TrailDetail = {
     notes: string | null;
     latest: { recordedOn: string; count: number } | null;
   }[];
+  files: { id: string; name: string; visibility?: string }[];
   workdays: {
     id: string;
     title: string;
@@ -163,6 +164,18 @@ export function TrailPage() {
                 <p>No count yet.</p>
               )}
               {counter.notes ? <p className="text-sm">{counter.notes}</p> : null}
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section className="space-y-2">
+        <h2 className="font-semibold text-navy">Files</h2>
+        {data.files.length === 0 ? <p>No files are shared.</p> : null}
+        <ul className="space-y-1">
+          {data.files.map((file) => (
+            <li key={file.id}>
+              <a href={`/api/files/${file.id}`}>{file.name}</a>
+              {file.visibility === 'PRIVATE' ? <span className="text-sm"> · Only editors</span> : null}
             </li>
           ))}
         </ul>

@@ -38,6 +38,10 @@ const trailInclude = {
     },
     orderBy: { name: 'asc' as const },
   },
+  files: {
+    select: { id: true, name: true, contentType: true, visibility: true, createdAt: true },
+    orderBy: { createdAt: 'desc' as const },
+  },
 } satisfies Prisma.TrailInclude;
 
 type TrailRow = Prisma.TrailGetPayload<{ include: typeof trailInclude }>;
@@ -106,6 +110,14 @@ function presentTrail(trail: TrailRow, detailed: boolean) {
         ...reviewFields(counter, counter.maintainer, detailed),
       };
     }),
+    files: trail.files
+      .filter((file) => detailed || file.visibility === 'PUBLIC')
+      .map((file) => ({
+        id: file.id,
+        name: file.name,
+        contentType: file.contentType,
+        ...(detailed ? { visibility: file.visibility } : {}),
+      })),
     assets: trail.assets.map((asset) => ({
       id: asset.id,
       name: asset.name,

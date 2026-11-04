@@ -65,6 +65,7 @@ describe('API', () => {
         "Workday",
         "CounterReading",
         "Counter",
+        "TrailFile",
         "Issue",
         "Asset",
         "Trail",
@@ -545,5 +546,43 @@ describe('API', () => {
     expect(section.items.some((item: { label: string }) => item.label.includes('Harbor counter'))).toBe(
       true,
     );
+  });
+
+  it('stores a public photo on a trail and hides a private file', async () => {
+    const png = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    );
+    const uploaded = await editor
+      .post('/api/trails/harbor-path/files')
+      .attach('file', png, 'harbor.png')
+      .field('visibility', 'PUBLIC')
+      .expect(201);
+    expect(uploaded.body.name).toBe('harbor.png');
+    await editor
+      .post('/api/trails/harbor-path/files')
+      .attach('file', Buffer.from('not a photo'), 'notes.txt')
+      .expect(400);
+    const hidden = await editor
+      .post('/api/trails/harbor-path/files')
+      .attach('file', png, 'private.png')
+      .field('visibility', 'PRIVATE')
+      .expect(201);
+    const pub = await request(app.getHttpServer()).get('/api/trails/harbor-path').expect(200);
+    const names = pub.body.files.map((item: { name: string }) => item.name);
+    expect(names).toContain('harbor.png');
+    expect(names).not.toContain('private.png');
+    await request(app.getHttpServer()).get(`/api/files/${hidden.body.id}`).expect(404);
+    const downloaded = await request(app.getHttpServer())
+      .get(`/api/files/${uploaded.body.id}`)
+      .buffer(true)
+      .parse((res, callback) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+        res.on('end', () => callback(null, Buffer.concat(chunks)));
+      })
+      .expect(200);
+    expect(downloaded.headers['content-type']).toContain('image/png');
+    expect(Buffer.compare(downloaded.body as Buffer, png)).toBe(0);
   });
 });

@@ -282,6 +282,7 @@ model User {
   maintainedCounters  Counter[]      @relation("CounterMaintainer")
   resolvedSuggestions Suggestion[]   @relation("SuggestionResolver")
   resolvedChangeRequests ChangeRequest[] @relation("ChangeRequestResolver")
+  uploadedFiles          TrailFile[]     @relation("FileUploader")
   createdAt           DateTime       @default(now())
 }
 
@@ -334,6 +335,7 @@ model Trail {
   workdays Workday[]
   changeRequests ChangeRequest[]
   counters Counter[]
+  files TrailFile[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -455,6 +457,21 @@ model CounterReading {
   count       Int
   notes       String?
   createdAt   DateTime @default(now())
+}
+
+/// A PDF or photo kept for one trail.
+// TODO(spec): the design doc did not choose object storage. The bytes live in Postgres until a file store is named.
+model TrailFile {
+  id           String     @id @default(cuid())
+  trailId      String
+  trail        Trail      @relation(fields: [trailId], references: [id], onDelete: Cascade)
+  name         String
+  contentType  String
+  bytes        Bytes
+  visibility   Visibility @default(PRIVATE)
+  uploadedById String?
+  uploadedBy   User?      @relation("FileUploader", fields: [uploadedById], references: [id])
+  createdAt    DateTime   @default(now())
 }
 
 model AuditLog {

@@ -1,6 +1,6 @@
 # Trail Steward
 
-Phase 1 is the planning navigator. Phase 2 adds the trail map. Phase 3 is the maintenance board. Phase 4 adds trail counters: a named counter on a trail and a whole-number reading for a date. File storage is still later. The design doc named counters and cabin occupancy without fields, so a date and a number is the simplest reading.
+Phase 1 is the planning navigator. Phase 2 adds the trail map. Phase 3 is the maintenance board. Phase 4 adds trail counters. Phase 5 stores a PDF or photo on a trail. The design doc did not name an object store, so the file bytes live in Postgres.
 
 `Organization` stays the owner directory. A trail points at it with `dataStewardOrgId` and `maintenanceOwnerOrgId`. `freshness()` covers trails and places. The review dashboard adds sections for trails, map points, and issues that have no owner.
 
@@ -21,6 +21,10 @@ The maintenance board lists trails that have an open problem, a planned work day
 ## Counters
 
 A counter belongs to one trail. Its kind is a trail counter, a cabin count, or other. An editor records how many visits the counter showed on a date. A newer date replaces the number shown on the trail page. Older numbers stay in the editor list. The review board and the Monday reminder include counters.
+
+## Files
+
+An editor uploads a PDF or a photo, up to 5 MB, onto a trail. The file stays with editors unless they mark it public. A public file on a published trail can be downloaded from the trail page. The spreadsheet import still carries the workbook in the job.
 
 ## What it does
 
@@ -55,6 +59,6 @@ An editor can mark a record reviewed only when they are its maintainer, or when 
 - `link-check`: Mondays 03:00 America/Anchorage. HEAD, then GET if the server refuses HEAD. Up to 5 redirects. 10 second timeout. User-Agent `TrailStewardLinkCheck/1.0`. Four checks at a time.
 - `review-reminders`: Mondays 08:00 America/Anchorage.
 - `checklist-cleanup`: monthly. Deletes checklists not opened for 18 months.
-- `import-guide`: on demand from the admin upload. The workbook is carried in the job because Phase 1 has no file storage.
+- `import-guide`: on demand from the admin upload. The workbook is still carried in the job.
 
 Organization websites are checked and logged. The schema has no link-status columns for them.

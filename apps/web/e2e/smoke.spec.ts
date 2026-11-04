@@ -88,6 +88,19 @@ test('an editor publishes a trail from the form', async ({ page }) => {
   await page.getByRole('spinbutton', { name: 'Count', exact: true }).fill('40');
   await page.getByRole('button', { name: 'Add count', exact: true }).click();
   await expect(page.getByText('Latest: 40 visits on November 2, 2026')).toBeVisible();
+  await page.getByLabel('Trail file').setInputFiles({
+    name: 'harbor.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    ),
+  });
+  await page.getByLabel('Who can download it').selectOption('PUBLIC');
+  await page.getByRole('button', { name: 'Upload file' }).click();
+  await expect(page.getByRole('link', { name: 'harbor.png' })).toBeVisible();
+  await page.goto('/trails/harbor-path');
+  await expect(page.getByRole('link', { name: 'harbor.png' })).toBeVisible();
   await page.goto('/admin/trails/new');
   await page.getByLabel('Name').fill('Playwright creek');
   await page.getByLabel(/^Line/).fill('-135.40, 57.10\n-135.35, 57.12');

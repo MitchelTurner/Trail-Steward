@@ -50,6 +50,7 @@ type TrailRow = {
     freshness: 'current' | 'due' | 'stale' | 'never-reviewed';
     reviewedAt: string | null;
   }[];
+  files: { id: string; name: string; contentType: string; visibility: string }[];
 };
 
 function parseLine(text: string): LineString | null {
@@ -254,6 +255,7 @@ export function TrailForm() {
         <WorkdayEditor slug={data.slug} workdays={data.workdays} orgs={orgs.data?.items ?? []} />
       ) : null}
       {data ? <CounterEditor slug={data.slug} counters={data.counters} /> : null}
+      {data ? <FileEditor slug={data.slug} files={data.files} /> : null}
       {data ? (
         <a className={buttonClass('quiet')} href={`/api/trails/${data.slug}/packet`}>
           Download work list
@@ -582,6 +584,71 @@ function CounterEditor({ slug, counters }: { slug: string; counters: TrailRow['c
         {error ? <p className="text-stale">{error}</p> : null}
         <button className={buttonClass('quiet')} type="submit" disabled={add.isPending}>
           Add counter
+        </button>
+      </form>
+    </section>
+  );
+}
+
+function FileEditor({ slug, files }: { slug: string; files: TrailRow['files'] }) {
+  const client = useQueryClient();
+  const [error, setError] = useState('');
+  const refresh = () => client.invalidateQueries({ queryKey: ['trail', 'manage', slug] });
+  const upload = useMutation({
+    mutationFn: (body: FormData) => api(`/api/trails/${slug}/files`, { method: 'POST', body }),
+    onSuccess: async () => {
+      setError('');
+      await refresh();
+    },
+    onError: (err: unknown) => {
+      setError(err instanceof ApiError ? err.message : 'Could not upload that file.');
+    },
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) => api(`/api/trails/${slug}/files/${id}`, { method: 'DELETE' }),
+    onSuccess: refresh,
+  });
+
+  function onUpload(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    upload.mutate(new FormData(form), { onSuccess: () => form.reset() });
+  }
+
+  return (
+    <section className="space-y-3">
+      <h3 className="font-semibold text-navy">Files</h3>
+      <p className="text-sm">PDF or photo, up to 5 MB. A public file shows on the trail page.</p>
+      <ul className="space-y-2">
+        {files.map((file) => (
+          <li key={file.id} className="flex flex-wrap items-center justify-between gap-2">
+            <a href={`/api/files/${file.id}`}>{file.name}</a>
+            <span className="text-sm">{file.visibility === 'PUBLIC' ? 'Public' : 'Only editors'}</span>
+            <button className={buttonClass('quiet')} type="button" onClick={() => remove.mutate(file.id)}>
+              Remove
+            </button>
+          </li>
+        ))}
+      </ul>
+      <form className="max-w-xl space-y-3" onSubmit={onUpload}>
+        <Field label="Trail file">
+          <input
+            className={inputClass}
+            name="file"
+            type="file"
+            accept="application/pdf,image/png,image/jpeg,image/webp"
+            required
+          />
+        </Field>
+        <Field label="Who can download it">
+          <select className={inputClass} name="visibility" defaultValue="PRIVATE">
+            <option value="PRIVATE">Only editors</option>
+            <option value="PUBLIC">Public</option>
+          </select>
+        </Field>
+        {error ? <p className="text-stale">{error}</p> : null}
+        <button className={buttonClass('quiet')} type="submit" disabled={upload.isPending}>
+          Upload file
         </button>
       </form>
     </section>
