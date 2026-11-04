@@ -36,6 +36,10 @@ async function bootstrap(): Promise<void> {
   }
   try {
     migrateDatabase();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+  }
+  try {
     await seedTopicsIfEmpty();
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);

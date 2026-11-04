@@ -36,13 +36,7 @@ CREATE TABLE "ChangeRequest" (
 );
 
 -- AddForeignKey
-ALTER TABLE "Workday" ADD CONSTRAINT "Workday_trailId_fkey" FOREIGN KEY ("trailId") REFERENCES "Trail"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Workday" ADD CONSTRAINT "Workday_hostOrgId_fkey" FOREIGN KEY ("hostOrgId") REFERENCES "Organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "ChangeRequest" ADD CONSTRAINT "ChangeRequest_trailId_fkey" FOREIGN KEY ("trailId") REFERENCES "Trail"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ChangeRequest" ADD CONSTRAINT "ChangeRequest_resolvedById_fkey" FOREIGN KEY ("resolvedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;

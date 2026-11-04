@@ -1,5 +1,12 @@
 -- CreateExtension
-CREATE EXTENSION IF NOT EXISTS "postgis";
+-- A database without PostGIS can still store the directory. Trail geometry is added later when the extension exists.
+DO $$
+BEGIN
+  CREATE EXTENSION IF NOT EXISTS postgis;
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE NOTICE 'PostGIS is not installed. The directory will load without trail geometry.';
+END $$;
 
 -- CreateEnum
 CREATE TYPE "OrgKind" AS ENUM ('FEDERAL', 'STATE', 'LOCAL_GOVERNMENT', 'TRIBAL_GOVERNMENT', 'NATIVE_CORPORATION', 'STATE_LAND_TRUST', 'UNIVERSITY', 'NONPROFIT', 'COALITION', 'REGIONAL_ORG', 'ADVISORY_BODY', 'BUSINESS', 'PRIVATE_LANDOWNER', 'OTHER');

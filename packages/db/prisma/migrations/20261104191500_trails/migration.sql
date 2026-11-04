@@ -13,7 +13,6 @@ CREATE TABLE "Trail" (
     "status" "ContentStatus" NOT NULL DEFAULT 'DRAFT',
     "visibility" "Visibility" NOT NULL DEFAULT 'PUBLIC',
     "line" JSONB NOT NULL,
-    "geom" geometry(LineString, 4326),
     "dataStewardOrgId" TEXT,
     "maintenanceOwnerOrgId" TEXT,
     "maintainerId" TEXT,
@@ -33,7 +32,6 @@ CREATE TABLE "Asset" (
     "kind" "AssetKind" NOT NULL,
     "notes" TEXT,
     "point" JSONB NOT NULL,
-    "geom" geometry(Point, 4326),
     "maintainerId" TEXT,
     "reviewedAt" TIMESTAMP(3),
     "reviewIntervalDays" INTEGER NOT NULL DEFAULT 365,
@@ -63,11 +61,17 @@ CREATE TABLE "Issue" (
 -- CreateIndex
 CREATE UNIQUE INDEX "Trail_slug_key" ON "Trail"("slug");
 
--- CreateIndex
-CREATE INDEX "Trail_geom_idx" ON "Trail" USING GIST ("geom");
-
--- CreateIndex
-CREATE INDEX "Asset_geom_idx" ON "Asset" USING GIST ("geom");
+-- Geometry is optional so a database without PostGIS can still finish migrating.
+DO $$
+BEGIN
+  ALTER TABLE "Trail" ADD COLUMN "geom" geometry(LineString, 4326);
+  ALTER TABLE "Asset" ADD COLUMN "geom" geometry(Point, 4326);
+  CREATE INDEX "Trail_geom_idx" ON "Trail" USING GIST ("geom");
+  CREATE INDEX "Asset_geom_idx" ON "Asset" USING GIST ("geom");
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE NOTICE 'PostGIS is not installed. Trail lines stay in JSON until the extension is available.';
+END $$;
 
 -- AddForeignKey
 ALTER TABLE "Trail" ADD CONSTRAINT "Trail_dataStewardOrgId_fkey" FOREIGN KEY ("dataStewardOrgId") REFERENCES "Organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -92,3 +96,9 @@ ALTER TABLE "Issue" ADD CONSTRAINT "Issue_ownerOrgId_fkey" FOREIGN KEY ("ownerOr
 
 -- AddForeignKey
 ALTER TABLE "Issue" ADD CONSTRAINT "Issue_maintainerId_fkey" FOREIGN KEY ("maintainerId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Workday" ADD CONSTRAINT "Workday_trailId_fkey" FOREIGN KEY ("trailId") REFERENCES "Trail"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ChangeRequest" ADD CONSTRAINT "ChangeRequest_trailId_fkey" FOREIGN KEY ("trailId") REFERENCES "Trail"("id") ON DELETE CASCADE ON UPDATE CASCADE;
