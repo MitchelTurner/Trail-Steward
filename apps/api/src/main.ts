@@ -8,7 +8,7 @@ import type { ServerEnv } from 'shared';
 import { loadServerEnv } from 'shared';
 import { ApiExceptionFilter } from './api-exception.filter';
 import { AppModule } from './app.module';
-import { migrateDatabase, seedTopicsIfEmpty } from './boot-data';
+import { migrateDatabase, seedTopicsIfEmpty, seedTrailsIfEmpty } from './boot-data';
 import { ENV } from './tokens';
 
 export function configureHttp(app: INestApplication): void {
@@ -41,6 +41,11 @@ async function bootstrap(): Promise<void> {
   }
   try {
     await seedTopicsIfEmpty();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+  }
+  try {
+    await seedTrailsIfEmpty();
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
   }

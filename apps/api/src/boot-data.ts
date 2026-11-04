@@ -1,7 +1,14 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { PrismaClient, findRepoRoot, importGuideFromFile, seedPathways, writeFixtureFile } from 'db';
+import {
+  PrismaClient,
+  findRepoRoot,
+  importGuideFromFile,
+  seedPathways,
+  seedPilotTrailsIfEmpty,
+  writeFixtureFile,
+} from 'db';
 
 function schemaDir(): string {
   const candidates = [
@@ -75,6 +82,18 @@ export async function seedTopicsIfEmpty(): Promise<void> {
     console.log(
       `Loaded the directory because no topics were stored. Warnings: ${summary.warnings.length}.`,
     );
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+export async function seedTrailsIfEmpty(): Promise<void> {
+  const prisma = new PrismaClient();
+  try {
+    const created = await seedPilotTrailsIfEmpty(prisma);
+    if (created > 0) {
+      console.log(`Published ${created} trail lines because the map was empty.`);
+    }
   } finally {
     await prisma.$disconnect();
   }
