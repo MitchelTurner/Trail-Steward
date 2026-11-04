@@ -62,6 +62,8 @@ type TrailRow = {
     issueIds: string[];
     workdayIds: string[];
     fileIds: string[];
+    sentAt: string | null;
+    sentTo: string | null;
   }[];
 };
 
@@ -275,6 +277,9 @@ export function TrailForm() {
           workdays={data.workdays}
           files={data.files}
           packets={data.packets}
+          ownerEmail={
+            orgs.data?.items.find((org) => org.id === data.maintenanceOwnerOrgId)?.contactEmail ?? ''
+          }
         />
       ) : null}
       {data ? (
@@ -676,18 +681,28 @@ function FileEditor({ slug, files }: { slug: string; files: TrailRow['files'] })
   );
 }
 
+function formatSent(iso: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Anchorage',
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(iso));
+}
+
 function PacketEditor({
   slug,
   issues,
   workdays,
   files,
   packets,
+  ownerEmail,
 }: {
   slug: string;
   issues: TrailRow['issues'];
   workdays: TrailRow['workdays'];
   files: TrailRow['files'];
   packets: TrailRow['packets'];
+  ownerEmail: string;
 }) {
   const client = useQueryClient();
   const [error, setError] = useState('');
@@ -717,6 +732,17 @@ function PacketEditor({
   const remove = useMutation({
     mutationFn: (id: string) => api(`/api/packets/${id}`, { method: 'DELETE' }),
     onSuccess: refresh,
+  });
+  const send = useMutation({
+    mutationFn: (body: { id: string; to: string }) =>
+      api(`/api/packets/${body.id}/send`, { method: 'POST', body: JSON.stringify({ to: body.to }) }),
+    onSuccess: async () => {
+      setError('');
+      await refresh();
+    },
+    onError: (err: unknown) => {
+      setError(err instanceof ApiError ? err.message : 'Could not send that work packet.');
+    },
   });
 
   function onSave(event: FormEvent<HTMLFormElement>) {
@@ -762,6 +788,33 @@ function PacketEditor({
                 ))}
               </select>
             </Field>
+            {packet.sentTo && packet.sentAt ? (
+              <p className="text-sm">
+                Sent to {packet.sentTo} on {formatSent(packet.sentAt)}
+              </p>
+            ) : null}
+            <form
+              className="flex flex-wrap items-end gap-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const data = new FormData(event.currentTarget);
+                send.mutate({ id: packet.id, to: String(data.get('to') ?? '') });
+              }}
+            >
+              <Field label={`Send ${packet.title} to`}>
+                <input
+                  key={ownerEmail || 'none'}
+                  className={inputClass}
+                  name="to"
+                  type="email"
+                  required
+                  defaultValue={ownerEmail}
+                />
+              </Field>
+              <button className={buttonClass('quiet')} type="submit" disabled={send.isPending}>
+                Send packet
+              </button>
+            </form>
             <div className="flex flex-wrap gap-2">
               <a className={buttonClass('quiet')} href={`/api/packets/${packet.id}/pdf`}>
                 Download packet

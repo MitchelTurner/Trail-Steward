@@ -681,4 +681,38 @@ describe('API', () => {
     const still = after.body.trails.find((item: { slug: string }) => item.slug === 'harbor-path');
     expect(still.packets.some((item: { title: string }) => item.title === 'Spring repairs')).toBe(false);
   });
+
+  it('emails a saved work packet to the address an editor types', async () => {
+    EmailService.sent.length = 0;
+    const managed = await editor.get('/api/trails/harbor-path').expect(200);
+    const washout = managed.body.issues.find((item: { title: string }) => item.title === 'Washout');
+    if (!washout) throw new Error('Harbor path needs an open problem.');
+    const created = await editor
+      .post('/api/trails/harbor-path/packets')
+      .send({ title: 'Crew packet', issueIds: [washout.id] })
+      .expect(201);
+    await request(app.getHttpServer())
+      .post(`/api/packets/${created.body.id}/send`)
+      .send({ to: 'crew@example.com' })
+      .expect(401);
+    await editor
+      .post(`/api/packets/${created.body.id}/send`)
+      .send({ to: 'not-an-email' })
+      .expect(400);
+    const sent = await editor
+      .post(`/api/packets/${created.body.id}/send`)
+      .send({ to: 'crew@example.com' })
+      .expect(200);
+    expect(sent.body.sentTo).toBe('crew@example.com');
+    expect(sent.body.status).toBe('DRAFT');
+    const message = EmailService.sent.find((item) => item.subject === 'Work packet: Crew packet');
+    expect(message?.to).toBe('crew@example.com');
+    expect(message?.attachments?.[0]?.filename).toBe('harbor-path-work-packet.pdf');
+    expect(message?.attachments?.[0]?.content.subarray(0, 4).toString('utf8')).toBe('%PDF');
+    const again = await editor.get('/api/trails/harbor-path').expect(200);
+    const row = again.body.packets.find((item: { id: string }) => item.id === created.body.id);
+    expect(row.sentTo).toBe('crew@example.com');
+    const pub = await request(app.getHttpServer()).get('/api/trails/harbor-path').expect(200);
+    expect(pub.body.packets).toBeUndefined();
+  });
 });

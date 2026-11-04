@@ -56,6 +56,8 @@ const trailInclude = {
       issueIds: true,
       workdayIds: true,
       fileIds: true,
+      sentAt: true,
+      sentTo: true,
     },
     orderBy: { updatedAt: 'desc' as const },
   },
@@ -146,6 +148,8 @@ function presentTrail(trail: TrailRow, detailed: boolean) {
             issueIds: packet.issueIds,
             workdayIds: packet.workdayIds,
             fileIds: packet.fileIds,
+            sentAt: packet.sentAt?.toISOString() ?? null,
+            sentTo: packet.sentTo,
           })),
         }
       : {}),

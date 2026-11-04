@@ -218,6 +218,10 @@ export const packetWriteSchema = z.object({
   fileIds: z.array(z.string()).max(50).optional(),
 });
 
+export const packetSendSchema = z.object({
+  to: z.string().trim().email().max(200),
+});
+
 export const counterReadingSchema = z.object({
   recordedOn: calendarDay,
   count: z.number().int().nonnegative().max(10_000_000),

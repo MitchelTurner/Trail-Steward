@@ -19,6 +19,7 @@ import {
   changeRequestStatuses,
   counterReadingSchema,
   counterWriteSchema,
+  packetSendSchema,
   packetWriteSchema,
   issueCreateSchema,
   issueOwnerSchema,
@@ -111,6 +112,7 @@ export class CounterPatchDto extends createZodDto(counterWriteSchema.partial()) 
 export class CounterReadingDto extends createZodDto(counterReadingSchema) {}
 export class PacketWriteDto extends createZodDto(packetWriteSchema) {}
 export class PacketPatchDto extends createZodDto(packetWriteSchema.partial()) {}
+export class PacketSendDto extends createZodDto(packetSendSchema) {}
 export class ChangeRequestListDto extends createZodDto(
   pageQuerySchema.extend({
     status: z.enum(changeRequestStatuses).optional(),

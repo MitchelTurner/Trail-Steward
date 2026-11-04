@@ -104,6 +104,9 @@ test('an editor publishes a trail from the form', async ({ page }) => {
   await page.getByRole('checkbox', { name: 'Washout' }).first().check();
   await page.getByRole('button', { name: 'Save work packet' }).click();
   await expect(page.getByText('Spring repairs · Draft')).toBeVisible();
+  await page.getByLabel('Send Spring repairs to').fill('crew@example.com');
+  await page.getByRole('button', { name: 'Send packet' }).click();
+  await expect(page.getByText('Sent to crew@example.com')).toBeVisible();
   await page.goto('/admin/board');
   await expect(page.getByText('Spring repairs · Draft')).toBeVisible();
   await page.goto('/trails/harbor-path');

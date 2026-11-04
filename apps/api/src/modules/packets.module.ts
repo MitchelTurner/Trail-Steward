@@ -18,7 +18,8 @@ import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { COUNTER_KIND_LABELS, PACKET_STATUS_LABELS } from 'shared';
 import { AuditService } from '../audit.service';
-import { PacketPatchDto, PacketWriteDto } from '../dto';
+import { EmailService } from '../email.service';
+import { PacketPatchDto, PacketSendDto, PacketWriteDto } from '../dto';
 import { PrismaService } from '../prisma.service';
 import { CurrentUser, Roles, type SessionUser } from '../session';
 import { LIMITS } from '../tokens';
@@ -51,6 +52,8 @@ function present(packet: {
   issueIds: string[];
   workdayIds: string[];
   fileIds: string[];
+  sentAt: Date | null;
+  sentTo: string | null;
 }) {
   return {
     id: packet.id,
@@ -60,6 +63,8 @@ function present(packet: {
     issueIds: packet.issueIds,
     workdayIds: packet.workdayIds,
     fileIds: packet.fileIds,
+    sentAt: packet.sentAt?.toISOString() ?? null,
+    sentTo: packet.sentTo,
   };
 }
 
@@ -124,11 +129,108 @@ export class TrailPacketsController {
   }
 }
 
+async function loadPacketPdf(prisma: PrismaService, id: string) {
+  const packet = await prisma.repairPacket.findUnique({
+    where: { id },
+    include: {
+      trail: {
+        include: {
+          maintenanceOwner: { select: { name: true } },
+          dataSteward: { select: { name: true } },
+          counters: {
+            orderBy: { name: 'asc' },
+            include: {
+              readings: { orderBy: [{ recordedOn: 'desc' }, { createdAt: 'desc' }], take: 1 },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!packet) return null;
+  const [issues, workdays, files] = await Promise.all([
+    packet.issueIds.length
+      ? prisma.issue.findMany({
+          where: { trailId: packet.trailId, id: { in: packet.issueIds } },
+          include: { ownerOrg: { select: { name: true } } },
+        })
+      : [],
+    packet.workdayIds.length
+      ? prisma.workday.findMany({
+          where: { trailId: packet.trailId, id: { in: packet.workdayIds } },
+          include: { hostOrg: { select: { name: true } } },
+        })
+      : [],
+    packet.fileIds.length
+      ? prisma.trailFile.findMany({
+          where: { trailId: packet.trailId, id: { in: packet.fileIds } },
+          select: { id: true, name: true },
+        })
+      : [],
+  ]);
+  const issueById = new Map(issues.map((issue) => [issue.id, issue]));
+  const dayById = new Map(workdays.map((day) => [day.id, day]));
+  const fileById = new Map(files.map((file) => [file.id, file]));
+  const generatedAt = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Anchorage',
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date());
+  const buffer = await renderWorkListPdf({
+    trailName: packet.trail.name,
+    documentTitle: packet.title,
+    notes: packet.notes,
+    saved: true,
+    generatedAt,
+    maintenanceOwner: packet.trail.maintenanceOwner?.name ?? 'No maintenance owner is named yet.',
+    dataSteward: packet.trail.dataSteward?.name ?? 'No data steward is named yet.',
+    issues: packet.issueIds.flatMap((issueId) => {
+      const issue = issueById.get(issueId);
+      if (!issue) return [];
+      return [
+        {
+          title: issue.title,
+          detail: issue.detail,
+          owner: issue.ownerOrg?.name ?? 'No owner',
+        },
+      ];
+    }),
+    workdays: packet.workdayIds.flatMap((dayId) => {
+      const day = dayById.get(dayId);
+      if (!day) return [];
+      return [
+        {
+          workDate: formatDay(dayStamp(day.workDate)),
+          title: day.title,
+          host: day.hostOrg?.name ?? 'No host named',
+          notes: day.notes ?? '',
+        },
+      ];
+    }),
+    files: packet.fileIds.flatMap((fileId) => {
+      const file = fileById.get(fileId);
+      return file ? [{ name: file.name }] : [];
+    }),
+    changes: [],
+    counts: packet.trail.counters.map((counter) => {
+      const latest = counter.readings[0];
+      const kind = COUNTER_KIND_LABELS[counter.kind];
+      if (!latest) return { label: `${counter.name} (${kind}): no count yet` };
+      return {
+        label: `${counter.name} (${kind}): ${latest.count.toLocaleString('en-US')} visits recorded on ${formatDay(dayStamp(latest.recordedOn))}`,
+      };
+    }),
+  });
+  const slug = packet.trail.slug.replace(/[^a-z0-9-]+/gi, '');
+  return { packet, buffer, filename: `${slug || 'trail'}-work-packet.pdf` };
+}
+
 @Controller('packets')
 export class PacketsController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly email: EmailService,
   ) {}
 
   @Patch(':id')
@@ -180,112 +282,61 @@ export class PacketsController {
     });
   }
 
+  @Post(':id/send')
+  @Roles('EDITOR')
+  @HttpCode(200)
+  @Throttle({ default: { limit: LIMITS.packet, ttl: 60 * 60 * 1000 } })
+  async send(
+    @Param('id') id: string,
+    @Body() body: PacketSendDto,
+    @CurrentUser() user: SessionUser,
+  ) {
+    const loaded = await loadPacketPdf(this.prisma, id);
+    if (!loaded) throw new NotFoundException('That work packet is not here.');
+    const sentAt = new Date();
+    await this.email.send({
+      to: body.to,
+      subject: `Work packet: ${loaded.packet.title}`,
+      text: [
+        `A work packet for ${loaded.packet.trail.name} is attached.`,
+        '',
+        loaded.packet.title,
+        loaded.packet.notes,
+        '',
+        'This is the set that was saved. It is not everything open on the trail today.',
+      ].join('\n'),
+      attachments: [{ filename: loaded.filename, content: loaded.buffer }],
+    });
+    const packet = await this.prisma.repairPacket.update({
+      where: { id },
+      data: { sentAt, sentTo: body.to },
+    });
+    await this.audit.record({
+      actorId: user.id,
+      action: 'repair-packet.send',
+      entityType: 'repairPacket',
+      entityId: packet.id,
+      after: { sentTo: body.to, title: packet.title },
+    });
+    return present(packet);
+  }
+
   @Get(':id/pdf')
   @Roles('EDITOR')
   @Throttle({ default: { limit: LIMITS.packet, ttl: 60 * 60 * 1000 } })
   @Header('Content-Type', 'application/pdf')
   async pdf(@Param('id') id: string, @CurrentUser() user: SessionUser, @Res({ passthrough: true }) res: Response) {
-    const packet = await this.prisma.repairPacket.findUnique({
-      where: { id },
-      include: {
-        trail: {
-          include: {
-            maintenanceOwner: { select: { name: true } },
-            dataSteward: { select: { name: true } },
-            counters: {
-              orderBy: { name: 'asc' },
-              include: {
-                readings: { orderBy: [{ recordedOn: 'desc' }, { createdAt: 'desc' }], take: 1 },
-              },
-            },
-          },
-        },
-      },
-    });
-    if (!packet) throw new NotFoundException('That work packet is not here.');
-    const [issues, workdays, files] = await Promise.all([
-      packet.issueIds.length
-        ? this.prisma.issue.findMany({
-            where: { trailId: packet.trailId, id: { in: packet.issueIds } },
-            include: { ownerOrg: { select: { name: true } } },
-          })
-        : [],
-      packet.workdayIds.length
-        ? this.prisma.workday.findMany({
-            where: { trailId: packet.trailId, id: { in: packet.workdayIds } },
-            include: { hostOrg: { select: { name: true } } },
-          })
-        : [],
-      packet.fileIds.length
-        ? this.prisma.trailFile.findMany({
-            where: { trailId: packet.trailId, id: { in: packet.fileIds } },
-            select: { id: true, name: true },
-          })
-        : [],
-    ]);
-    const issueById = new Map(issues.map((issue) => [issue.id, issue]));
-    const dayById = new Map(workdays.map((day) => [day.id, day]));
-    const fileById = new Map(files.map((file) => [file.id, file]));
-    const generatedAt = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/Anchorage',
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    }).format(new Date());
-    const buffer = await renderWorkListPdf({
-      trailName: packet.trail.name,
-      documentTitle: packet.title,
-      notes: packet.notes,
-      saved: true,
-      generatedAt,
-      maintenanceOwner: packet.trail.maintenanceOwner?.name ?? 'No maintenance owner is named yet.',
-      dataSteward: packet.trail.dataSteward?.name ?? 'No data steward is named yet.',
-      issues: packet.issueIds.flatMap((issueId) => {
-        const issue = issueById.get(issueId);
-        if (!issue) return [];
-        return [
-          {
-            title: issue.title,
-            detail: issue.detail,
-            owner: issue.ownerOrg?.name ?? 'No owner',
-          },
-        ];
-      }),
-      workdays: packet.workdayIds.flatMap((dayId) => {
-        const day = dayById.get(dayId);
-        if (!day) return [];
-        return [
-          {
-            workDate: formatDay(dayStamp(day.workDate)),
-            title: day.title,
-            host: day.hostOrg?.name ?? 'No host named',
-            notes: day.notes ?? '',
-          },
-        ];
-      }),
-      files: packet.fileIds.flatMap((fileId) => {
-        const file = fileById.get(fileId);
-        return file ? [{ name: file.name }] : [];
-      }),
-      changes: [],
-      counts: packet.trail.counters.map((counter) => {
-        const latest = counter.readings[0];
-        const kind = COUNTER_KIND_LABELS[counter.kind];
-        if (!latest) return { label: `${counter.name} (${kind}): no count yet` };
-        return {
-          label: `${counter.name} (${kind}): ${latest.count.toLocaleString('en-US')} visits recorded on ${formatDay(dayStamp(latest.recordedOn))}`,
-        };
-      }),
-    });
+    const loaded = await loadPacketPdf(this.prisma, id);
+    if (!loaded) throw new NotFoundException('That work packet is not here.');
     await this.audit.record({
       actorId: user.id,
       action: 'repair-packet.download',
       entityType: 'repairPacket',
-      entityId: packet.id,
-      after: { title: packet.title, status: PACKET_STATUS_LABELS[packet.status] },
+      entityId: loaded.packet.id,
+      after: { title: loaded.packet.title, status: PACKET_STATUS_LABELS[loaded.packet.status] },
     });
-    const slug = packet.trail.slug.replace(/[^a-z0-9-]+/gi, '');
-    res.setHeader('Content-Disposition', `attachment; filename="${slug || 'trail'}-work-packet.pdf"`);
-    return new StreamableFile(buffer);
+    res.setHeader('Content-Disposition', `attachment; filename="${loaded.filename}"`);
+    return new StreamableFile(loaded.buffer);
   }
 }
 

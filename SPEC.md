@@ -1,6 +1,6 @@
 # Trail Steward
 
-Phase 1 is the planning navigator. Phase 2 adds the trail map. Phase 3 is the maintenance board. Phase 4 adds trail counters. Phase 5 stores a PDF or photo on a trail. Phase 6 saves a work packet. Phase 7 stores the Monday check of each organization's website. The design doc did not name an object store, so the file bytes live in Postgres.
+Phase 1 is the planning navigator. Phase 2 adds the trail map. Phase 3 is the maintenance board. Phase 4 adds trail counters. Phase 5 stores a PDF or photo on a trail. Phase 6 saves a work packet. Phase 7 stores the Monday check of each organization's website. Phase 8 emails that packet. The design doc did not name an object store, so the file bytes live in Postgres.
 
 `Organization` stays the owner directory. A trail points at it with `dataStewardOrgId` and `maintenanceOwnerOrgId`. `freshness()` covers trails and places. The review dashboard adds sections for trails, map points, and issues that have no owner.
 
@@ -28,7 +28,7 @@ An editor uploads a PDF or a photo, up to 5 MB, onto a trail. The file stays wit
 
 ## Work packets
 
-An editor saves a work packet on one trail. The packet has a title, notes, and a status: draft, ready to send, or done. It keeps the problems, work days, and files the editor checked. Download packet prints that saved set. It does not add problems that were left off. The packet stays with editors. A draft or a packet that is ready to send shows on the maintenance board. Marking it done takes it off the board.
+An editor saves a work packet on one trail. The packet has a title, notes, and a status: draft, ready to send, or done. It keeps the problems, work days, and files the editor checked. Download packet prints that saved set. It does not add problems that were left off. Send packet emails that same PDF to an address the editor types. The maintenance owner's email is filled in when one is stored. The packet stays with editors. A draft or a packet that is ready to send shows on the maintenance board. Marking it done takes it off the board. Sending it does not mark it done.
 
 ## What it does
 

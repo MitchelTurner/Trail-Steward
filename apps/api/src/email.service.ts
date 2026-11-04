@@ -3,7 +3,12 @@ import { Resend } from 'resend';
 import type { ServerEnv } from 'shared';
 import { ENV } from './tokens';
 
-export type OutboundEmail = { to: string; subject: string; text: string };
+export type OutboundEmail = {
+  to: string;
+  subject: string;
+  text: string;
+  attachments?: { filename: string; content: Buffer }[];
+};
 
 @Injectable()
 export class EmailService {
@@ -24,6 +29,10 @@ export class EmailService {
         to: message.to,
         subject: message.subject,
         text: message.text,
+        attachments: message.attachments?.map((file) => ({
+          filename: file.filename,
+          content: file.content,
+        })),
       });
     } catch (error) {
       this.logger.error(error instanceof Error ? error.message : 'email send failed');

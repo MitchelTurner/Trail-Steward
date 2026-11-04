@@ -499,6 +499,9 @@ model RepairPacket {
   issueIds    String[]
   workdayIds  String[]
   fileIds     String[]
+  // TODO(spec): the design doc did not name who receives a packet. The editor types the address.
+  sentAt      DateTime?
+  sentTo      String?
   createdById String?
   createdBy   User?        @relation("PacketAuthor", fields: [createdById], references: [id])
   createdAt   DateTime     @default(now())
