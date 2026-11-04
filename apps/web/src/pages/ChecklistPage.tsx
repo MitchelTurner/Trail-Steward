@@ -135,6 +135,8 @@ export function ChecklistPage() {
       <ol className="space-y-4">
         {checklist.data.steps.map((step, index) => {
           const draft = steps[step.key] ?? { done: false, note: '' };
+          const waiting = (step.waitFor ?? []).filter((item) => !steps[item.key]?.done);
+          const locked = waiting.length > 0 && !draft.done;
           return (
             <li key={step.key} className="rounded border border-line bg-card p-4">
               <label className="flex items-start gap-2">
@@ -142,6 +144,7 @@ export function ChecklistPage() {
                   className="mt-1"
                   type="checkbox"
                   checked={draft.done}
+                  disabled={locked}
                   onChange={(event) => {
                     const doneNow = event.target.checked;
                     setDirty(true);
@@ -159,6 +162,7 @@ export function ChecklistPage() {
                   {index + 1}. {step.title}
                 </span>
               </label>
+              {locked ? <p className="mt-2 text-sm">Finish "{waiting[0]?.title}" first.</p> : null}
               <div className="mt-3 space-y-2 text-sm">
                 <MarkdownText text={step.why} />
                 <MarkdownText text={step.howTo} />

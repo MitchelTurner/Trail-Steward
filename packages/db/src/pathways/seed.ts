@@ -5,8 +5,8 @@ import { contactQuerySchema, questionsSchema, type Question } from 'shared';
 
 // TODO(spec): "Not sure" on federal funding shows the federal review step, so that step is not skipped
 // when the funding source is still unknown. Forest Service and National Park Service land show it too.
-// TODO(spec): pick-program lists check-plan as a soft prerequisite. The schema only has
-// prerequisiteKeys, so it is stored as a normal prerequisite and ignored when that step is hidden.
+// A prerequisite only holds a later step when that earlier step is on the checklist.
+// Hidden steps, such as the plan check after a trail is already in a plan, do not hold it.
 
 type StepFile = {
   key: string;

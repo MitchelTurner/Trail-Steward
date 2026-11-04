@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -26,6 +27,7 @@ import {
   questionsSchema,
   selectSteps,
   stepStateSchema,
+  visiblePrerequisites,
   type Answers,
   type Cond,
   type ContactQuery,
@@ -153,7 +155,10 @@ export class ChecklistsController {
   @Patch(':token')
   @Throttle({ default: { limit: LIMITS.checklistPatch, ttl: 60 * 60 * 1000 } })
   async update(@Param('token') token: string, @Body() body: ChecklistPatchDto) {
-    const checklist = await this.prisma.checklist.findUnique({ where: { token } });
+    const checklist = await this.prisma.checklist.findUnique({
+      where: { token },
+      include: { pathway: { include: { steps: true } } },
+    });
     if (!checklist) throw new NotFoundException('Checklist not found.');
     const current = stepStateSchema.safeParse(checklist.stepState).success
       ? stepStateSchema.parse(checklist.stepState)
@@ -167,6 +172,18 @@ export class ChecklistsController {
           ...(value.note ? { note: value.note } : {}),
           ...(doneAt ? { doneAt } : {}),
         };
+      }
+      const visible = selectSteps(
+        checklist.pathway.steps.map((step) => ({ ...step, showIf: asCond(step.showIf) })),
+        asAnswers(checklist.answers),
+      );
+      const byKey = new Map(visible.map((step) => [step.key, step]));
+      for (const [key, value] of Object.entries(body.stepState)) {
+        if (!value.done || current[key]?.done) continue;
+        const step = byKey.get(key);
+        if (!step) continue;
+        const earlier = visiblePrerequisites(step, visible).find((item) => !next[item.key]?.done);
+        if (earlier) throw new BadRequestException(`Finish "${earlier.title}" first.`);
       }
     }
     await this.prisma.checklist.update({
@@ -265,6 +282,10 @@ export class ChecklistsController {
         howTo: step.howTo,
         examples: step.examples,
         topicSlugs: step.topicSlugs,
+        waitFor: visiblePrerequisites(step, selected).map((item) => ({
+          key: item.key,
+          title: item.title,
+        })),
         done: Boolean(saved?.done),
         note: saved?.note ?? '',
         doneAt: saved?.doneAt ?? null,

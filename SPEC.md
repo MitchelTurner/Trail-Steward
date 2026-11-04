@@ -1,6 +1,6 @@
 # Trail Steward
 
-Phase 1 is the planning navigator. Phase 2 adds the trail map. Phase 3 is the maintenance board. Phase 4 adds trail counters. Phase 5 stores a PDF or photo on a trail. Phase 6 saves a work packet. Phase 7 stores the Monday check of each organization's website. Phase 8 emails that packet. Phase 9 asks whether the project is seeking federal funding. The design doc did not name an object store, so the file bytes live in Postgres.
+Phase 1 is the planning navigator. Phase 2 adds the trail map. Phase 3 is the maintenance board. Phase 4 adds trail counters. Phase 5 stores a PDF or photo on a trail. Phase 6 saves a work packet. Phase 7 stores the Monday check of each organization's website. Phase 8 emails that packet. Phase 9 asks whether the project is seeking federal funding. Phase 10 holds a later checklist step until the earlier step on that same list is finished. The design doc did not name an object store, so the file bytes live in Postgres.
 
 `Organization` stays the owner directory. A trail points at it with `dataStewardOrgId` and `maintenanceOwnerOrgId`. `freshness()` covers trails and places. The review dashboard adds sections for trails, map points, and issues that have no owner.
 
@@ -34,7 +34,7 @@ An editor saves a work packet on one trail. The packet has a title, notes, and a
 
 - Searchable directory of organizations, their role on each topic, the resources they named, and the needs they named.
 - One pathway: prepare a trail project for a funding application. Five intake questions, then an ordered checklist. The federal review step shows for Forest Service or National Park Service land, and when the project is asking for federal funding or is not sure yet.
-- Checklists are saved with an unguessable link. No public account. The owner can tick steps, add notes, and download a PDF.
+- Checklists are saved with an unguessable link. No public account. The owner can tick steps, add notes, and download a PDF. A later step stays locked until each earlier step that is on this checklist is finished. A step that was skipped, such as the plan check after a trail is already in a plan, does not lock anything.
 - Editors sign in with a magic link. Coordinators assign maintainers and see the review dashboard. Admins run the spreadsheet import and read the audit log.
 
 ## Stack

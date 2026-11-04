@@ -129,6 +129,7 @@ export type ChecklistStep = {
   howTo: string;
   examples: string | null;
   topicSlugs: string[];
+  waitFor: { key: string; title: string }[];
   done: boolean;
   note: string;
   doneAt: string | null;

@@ -305,6 +305,36 @@ describe('API', () => {
     expect(again.body.steps[0].note).toBe('Called the district');
     expect(again.body.progress.done).toBe(2);
 
+    const idea = await request(app.getHttpServer())
+      .post('/api/checklists')
+      .send({ pathwaySlug: 'funding-application', answers: tribal })
+      .expect(201);
+    const ideaToken = idea.body.token as string;
+    const ideaList = await request(app.getHttpServer()).get(`/api/checklists/${ideaToken}`).expect(200);
+    const program = ideaList.body.steps.find((step: { key: string }) => step.key === 'pick-program');
+    expect(program.waitFor.map((item: { key: string }) => item.key)).toEqual(['check-plan']);
+    await request(app.getHttpServer())
+      .patch(`/api/checklists/${ideaToken}`)
+      .send({ stepState: { 'pick-program': { done: true } } })
+      .expect(400);
+    const finished = await request(app.getHttpServer())
+      .patch(`/api/checklists/${ideaToken}`)
+      .send({
+        stepState: {
+          'confirm-land': { done: true },
+          'check-plan': { done: true },
+          'pick-program': { done: true },
+        },
+      })
+      .expect(200);
+    expect(
+      finished.body.steps.find((step: { key: string }) => step.key === 'pick-program').done,
+    ).toBe(true);
+    const planned = await request(app.getHttpServer()).get(`/api/checklists/${token}`).expect(200);
+    expect(
+      planned.body.steps.find((step: { key: string }) => step.key === 'pick-program').waitFor,
+    ).toEqual([]);
+
     const pdf = await request(app.getHttpServer())
       .get(`/api/checklists/${token}/pdf`)
       .buffer(true)

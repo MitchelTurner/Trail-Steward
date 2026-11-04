@@ -31,6 +31,7 @@ test('a checklist keeps two finished steps after reload', async ({ page }) => {
   await page.getByRole('button', { name: 'See my checklist' }).click();
   await expect(page).toHaveURL(/\/c\//);
   const boxes = page.getByRole('checkbox');
+  await expect(boxes.nth(1)).toBeDisabled();
   const saved = page.waitForResponse(
     (response) =>
       response.url().includes('/api/checklists/') &&
@@ -38,6 +39,7 @@ test('a checklist keeps two finished steps after reload', async ({ page }) => {
       response.ok(),
   );
   await boxes.nth(0).check();
+  await expect(boxes.nth(1)).toBeEnabled();
   await boxes.nth(1).check();
   await saved;
   await expect(page.getByText('Saved')).toBeVisible();

@@ -66,3 +66,17 @@ export function orderSteps<T extends StepLike>(steps: T[]): T[] {
 export function selectSteps<T extends StepLike>(steps: T[], answers: Answers): T[] {
   return orderSteps(visibleSteps(steps, answers));
 }
+
+/** Prerequisites that are on this checklist. A hidden step does not hold a later one. */
+export function visiblePrerequisites<T extends StepLike>(step: T, visible: T[]): T[] {
+  const byKey = new Map(visible.map((item) => [item.key, item]));
+  const seen = new Set<string>();
+  const found: T[] = [];
+  for (const key of step.prerequisiteKeys) {
+    const earlier = byKey.get(key);
+    if (!earlier || earlier.key === step.key || seen.has(earlier.key)) continue;
+    seen.add(earlier.key);
+    found.push(earlier);
+  }
+  return found;
+}

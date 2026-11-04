@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Cond } from './conditions';
-import { selectSteps, type StepLike } from './steps';
+import { selectSteps, visiblePrerequisites, type StepLike } from './steps';
 
 type FixtureStep = StepLike & { title: string };
 
@@ -161,6 +161,31 @@ describe('funding pathway step selection', () => {
         federalFunding: 'unknown',
       }),
     ).toContain('federal-review');
+  });
+
+  it('holds the funding-program step only while the plan step is on the checklist', () => {
+    const idea = selectSteps(steps, {
+      community: 'Hoonah',
+      landTypes: ['tribal'],
+      stage: 'idea',
+      match: 'yes',
+      federalFunding: 'no',
+    });
+    const program = idea.find((item) => item.key === 'pick-program');
+    expect(program).toBeTruthy();
+    expect(visiblePrerequisites(program ?? steps[0], idea).map((item) => item.key)).toEqual([
+      'check-plan',
+    ]);
+    const planned = selectSteps(steps, {
+      community: 'Juneau',
+      landTypes: ['usfs'],
+      stage: 'planned',
+      match: 'yes',
+      federalFunding: 'no',
+    });
+    const later = planned.find((item) => item.key === 'pick-program');
+    expect(later).toBeTruthy();
+    expect(visiblePrerequisites(later ?? steps[0], planned)).toEqual([]);
   });
 
   it('drops plan, wetlands, federal, tribal, and match steps when the project is permitted on a state park', () => {
