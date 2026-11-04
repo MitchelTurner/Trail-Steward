@@ -235,17 +235,47 @@ export const serverEnvSchema = z.object({
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
 
+function present(value: string | undefined): string | undefined {
+  return value && value.length > 0 ? value : undefined;
+}
+
+function redisUrlFrom(source: NodeJS.ProcessEnv): string | undefined {
+  const direct = present(source.REDIS_URL) || present(source.REDIS_PRIVATE_URL) || present(source.REDIS_PUBLIC_URL);
+  if (direct) return direct;
+  const host = present(source.REDISHOST);
+  if (!host) return undefined;
+  const port = present(source.REDISPORT) || '6379';
+  const user = present(source.REDISUSER) || 'default';
+  const password = present(source.REDISPASSWORD) || present(source.REDIS_PASSWORD);
+  const auth = password ? `${encodeURIComponent(user)}:${encodeURIComponent(password)}@` : `${encodeURIComponent(user)}@`;
+  return `redis://${auth}${host}:${port}`;
+}
+
+const envHints: Record<string, string> = {
+  DATABASE_URL: 'Add a variable reference to the Postgres service DATABASE_URL.',
+  REDIS_URL: 'Add a variable reference to the Redis service REDIS_URL.',
+  JWT_SECRET: 'Set the same 16+ character secret on the api and worker services.',
+  RESEND_API_KEY: 'Set a Resend API key, or re_test until mail is ready.',
+  EMAIL_FROM: 'Set the sender, such as Trail Steward <noreply@example.com>.',
+  APP_BASE_URL: 'Set the public web URL, including https://.',
+  API_BASE_URL: 'Set the public API URL, including https://.',
+};
+
 export function loadServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEnv {
   const env: NodeJS.ProcessEnv = {
     ...source,
-    DATABASE_URL: source.DATABASE_URL || source.DATABASE_PRIVATE_URL,
-    REDIS_URL: source.REDIS_URL || source.REDIS_PRIVATE_URL,
-    TZ: source.TZ || 'America/Anchorage',
+    DATABASE_URL: present(source.DATABASE_URL) || present(source.DATABASE_PRIVATE_URL),
+    REDIS_URL: redisUrlFrom(source),
+    TZ: present(source.TZ) || 'America/Anchorage',
   };
   const parsed = serverEnvSchema.safeParse(env);
   if (!parsed.success) {
     const details = parsed.error.issues
-      .map((issue) => `${issue.path.join('.') || 'env'}: ${issue.message}`)
+      .map((issue) => {
+        const key = issue.path.join('.') || 'env';
+        const hint = envHints[key];
+        return hint ? `${key}: ${hint}` : `${key}: ${issue.message}`;
+      })
       .join('\n');
     throw new Error(`Invalid environment. Set the missing values and start again.\n${details}`);
   }

@@ -20,4 +20,16 @@ describe('loadServerEnv', () => {
     expect(env.DATABASE_URL).toBe('postgresql://db/trail');
     expect(env.REDIS_URL).toBe('redis://redis:6379');
   });
+
+  it('builds a Redis URL from Railway host variables', () => {
+    const env = loadServerEnv({
+      ...base,
+      DATABASE_URL: 'postgresql://db/trail',
+      REDISHOST: 'redis.railway.internal',
+      REDISPORT: '6379',
+      REDISUSER: 'default',
+      REDISPASSWORD: 'secret/pass',
+    });
+    expect(env.REDIS_URL).toBe('redis://default:secret%2Fpass@redis.railway.internal:6379');
+  });
 });

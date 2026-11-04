@@ -4,6 +4,7 @@ export function redisOptions(url: string): {
   username?: string;
   password?: string;
   maxRetriesPerRequest: null;
+  family: 0;
   tls?: Record<string, never>;
 } {
   const parsed = new URL(url);
@@ -13,6 +14,8 @@ export function redisOptions(url: string): {
     username: parsed.username || undefined,
     password: parsed.password || undefined,
     maxRetriesPerRequest: null,
+    // Railway private DNS is IPv6 on older environments. 0 tries both.
+    family: 0,
     tls: parsed.protocol === 'rediss:' ? {} : undefined,
   };
 }

@@ -67,7 +67,7 @@ The web service listens on Railway's `PORT` and proxies `/api` to `API_UPSTREAM`
 
 The Postgres service must provide PostGIS (`postgis/postgis:16-3.4`). Railway's default Postgres does not. The API release command runs `CREATE EXTENSION postgis` and exits if that extension is missing.
 
-Set these variables on both the API and the worker. `TZ` defaults to `America/Anchorage` when it is unset. `DATABASE_PRIVATE_URL` and `REDIS_PRIVATE_URL` are used when `DATABASE_URL` or `REDIS_URL` is unset.
+Linking Postgres fills `DATABASE_URL` only. On both the API and the worker, also reference the Redis service `REDIS_URL`, and set `JWT_SECRET` (the same 16+ character value on both), `RESEND_API_KEY` (`re_test` skips real mail), `EMAIL_FROM`, `APP_BASE_URL`, and `API_BASE_URL`. `TZ` defaults to `America/Anchorage`. Host variables `REDISHOST`, `REDISPORT`, `REDISUSER`, and `REDISPASSWORD` are used when `REDIS_URL` itself is unset.
 
 - `DATABASE_URL`
 - `REDIS_URL`
