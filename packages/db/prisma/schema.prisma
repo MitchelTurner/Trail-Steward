@@ -1,0 +1,296 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
+}
+
+enum OrgKind {
+  FEDERAL
+  STATE
+  LOCAL_GOVERNMENT
+  TRIBAL_GOVERNMENT
+  NATIVE_CORPORATION
+  STATE_LAND_TRUST
+  UNIVERSITY
+  NONPROFIT
+  COALITION
+  REGIONAL_ORG
+  ADVISORY_BODY
+  BUSINESS
+  PRIVATE_LANDOWNER
+  OTHER
+}
+
+enum UserRole {
+  EDITOR
+  COORDINATOR
+  ADMIN
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum LinkStatus {
+  UNCHECKED
+  OK
+  REDIRECT
+  BROKEN
+}
+
+enum SuggestionStatus {
+  OPEN
+  ACCEPTED
+  REJECTED
+}
+
+enum Visibility {
+  PUBLIC
+  PARTNERS
+  PRIVATE
+}
+
+model Organization {
+  id           String     @id @default(cuid())
+  slug         String     @unique
+  name         String
+  shortName    String?
+  kind         OrgKind
+  websiteUrl   String?
+  description  String?
+  communities  String[]
+  isGroup      Boolean    @default(false)
+  visibility   Visibility @default(PUBLIC)
+  contactName  String?
+  contactEmail String?
+  contactPhone String?
+  status       ContentStatus @default(PUBLISHED)
+
+  maintainerId       String?
+  maintainer         User?   @relation("OrgMaintainer", fields: [maintainerId], references: [id])
+  reviewedAt         DateTime?
+  reviewIntervalDays Int     @default(365)
+
+  members   User[]       @relation("OrgMembers")
+  roles     PlayerRole[]
+  resources Resource[]   @relation("ResourceOwner")
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model Topic {
+  id        String @id @default(cuid())
+  slug      String @unique
+  name      String
+  question  String
+  sortOrder Int
+
+  learnings TopicLearning[]
+  roleTypes RoleType[]
+  roles     PlayerRole[]
+}
+
+model TopicLearning {
+  id        String @id @default(cuid())
+  topicId   String
+  topic     Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  heading   String
+  body      String
+  sortOrder Int
+}
+
+model RoleType {
+  id         String @id @default(cuid())
+  topicId    String
+  topic      Topic  @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  name       String
+  definition String
+  sortOrder  Int
+
+  @@unique([topicId, name])
+}
+
+/// One row of a topic sheet's "What each player shared" table.
+model PlayerRole {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  topicId        String
+  topic          Topic        @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  roleLabel      String
+  roleTypeNames  String[]
+  roleQualifier  String?
+  isDocumented   Boolean      @default(true)
+  hasRole        Boolean      @default(true)
+  resourcesText  String?
+  needsText      String?
+  status         ContentStatus @default(PUBLISHED)
+
+  maintainerId       String?
+  maintainer         User?     @relation("RoleMaintainer", fields: [maintainerId], references: [id])
+  reviewedAt         DateTime?
+  reviewIntervalDays Int       @default(365)
+
+  resources   Resource[] @relation("RoleResources")
+  sourceSheet String
+  sourceRow   Int
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([organizationId, topicId])
+}
+
+model Resource {
+  id          String        @id @default(cuid())
+  title       String
+  url         String
+  kind        String
+  description String?
+  ownerOrgId  String?
+  ownerOrg    Organization? @relation("ResourceOwner", fields: [ownerOrgId], references: [id])
+  roles       PlayerRole[]  @relation("RoleResources")
+  stepLinks   StepResource[]
+
+  linkStatus     LinkStatus @default(UNCHECKED)
+  linkCheckedAt  DateTime?
+  linkFinalUrl   String?
+  linkHttpStatus Int?
+
+  maintainerId       String?
+  maintainer         User?     @relation("ResourceMaintainer", fields: [maintainerId], references: [id])
+  reviewedAt         DateTime?
+  reviewIntervalDays Int       @default(180)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([url, title])
+}
+
+model Pathway {
+  id        String        @id @default(cuid())
+  slug      String        @unique
+  title     String
+  summary   String
+  status    ContentStatus @default(DRAFT)
+  questions Json
+  steps     PathwayStep[]
+  version   Int           @default(1)
+  // Back-relation required by Checklist.pathway.
+  checklists Checklist[]
+
+  maintainerId       String?
+  maintainer         User?     @relation("PathwayMaintainer", fields: [maintainerId], references: [id])
+  reviewedAt         DateTime?
+  reviewIntervalDays Int       @default(180)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PathwayStep {
+  id               String   @id @default(cuid())
+  pathwayId        String
+  pathway          Pathway  @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+  key              String
+  sortOrder        Int
+  title            String
+  why              String
+  howTo            String
+  examples         String?
+  topicSlugs       String[]
+  prerequisiteKeys String[]
+  showIf           Json?
+  contactQuery     Json?
+  resources        StepResource[]
+
+  @@unique([pathwayId, key])
+}
+
+model StepResource {
+  stepId     String
+  step       PathwayStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  resourceId String
+  resource   Resource    @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  sortOrder  Int         @default(0)
+
+  @@id([stepId, resourceId])
+}
+
+/// A saved run of a pathway. No account: accessed by an unguessable token.
+model Checklist {
+  id             String   @id @default(cuid())
+  token          String   @unique
+  pathwayId      String
+  pathway        Pathway  @relation(fields: [pathwayId], references: [id])
+  pathwayVersion Int
+  title          String
+  answers        Json
+  stepState      Json
+  community      String?
+  lastOpenedAt   DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Suggestion {
+  id             String           @id @default(cuid())
+  targetType     String
+  targetId       String?
+  message        String
+  proposedUrl    String?
+  submitterName  String?
+  submitterEmail String?
+  status         SuggestionStatus @default(OPEN)
+  resolvedById   String?
+  resolvedBy     User?            @relation("SuggestionResolver", fields: [resolvedById], references: [id])
+  resolutionNote String?
+  createdAt      DateTime         @default(now())
+  resolvedAt     DateTime?
+}
+
+model User {
+  id             String        @id @default(cuid())
+  email          String        @unique
+  name           String?
+  role           UserRole      @default(EDITOR)
+  organizationId String?
+  organization   Organization? @relation("OrgMembers", fields: [organizationId], references: [id])
+  isActive       Boolean       @default(true)
+  lastLoginAt    DateTime?
+
+  maintainedOrgs      Organization[] @relation("OrgMaintainer")
+  maintainedRoles     PlayerRole[]   @relation("RoleMaintainer")
+  maintainedResources Resource[]     @relation("ResourceMaintainer")
+  maintainedPathways  Pathway[]      @relation("PathwayMaintainer")
+  resolvedSuggestions Suggestion[]   @relation("SuggestionResolver")
+  createdAt           DateTime       @default(now())
+}
+
+model MagicLinkToken {
+  id        String    @id @default(cuid())
+  email     String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String
+  diff       Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+}

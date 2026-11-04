@@ -1,0 +1,15 @@
+node_modules
+dist
+.turbo
+coverage
+.env
+.env.local
+!.env.example
+*.tsbuildinfo
+playwright-report
+test-results
+blob-report
+.DS_Store
+apps/web/dist
+*.log
+data/local-*.xlsx

@@ -1,0 +1,300 @@
+{
+  "slug": "funding-application",
+  "title": "Prepare a trail project for a funding application",
+  "summary": "Answer four questions and get an ordered checklist for a trail funding application in Southeast Alaska.",
+  "status": "DRAFT",
+  "questions": [
+    {
+      "id": "community",
+      "type": "select-or-text",
+      "label": "Which community is the trail in?",
+      "options": [
+        "Angoon",
+        "Coffman Cove",
+        "Craig",
+        "Gustavus",
+        "Haines",
+        "Hoonah",
+        "Hydaburg",
+        "Juneau",
+        "Kake",
+        "Kasaan",
+        "Ketchikan",
+        "Klawock",
+        "Metlakatla",
+        "Pelican",
+        "Petersburg",
+        "Saxman",
+        "Sitka",
+        "Skagway",
+        "Tenakee Springs",
+        "Thorne Bay",
+        "Wrangell",
+        "Yakutat",
+        "Other"
+      ]
+    },
+    {
+      "id": "landTypes",
+      "type": "multi",
+      "label": "Whose land does the trail cross? Pick all that apply.",
+      "options": [
+        { "value": "usfs", "label": "Tongass National Forest (Forest Service)" },
+        { "value": "nps", "label": "National Park Service" },
+        { "value": "state-parks", "label": "State park or recreation site" },
+        { "value": "state-general", "label": "Other state land" },
+        { "value": "dot-row", "label": "Along a state highway" },
+        { "value": "local", "label": "City or borough land" },
+        { "value": "tribal", "label": "Tribal land or reservation" },
+        { "value": "corporation", "label": "Native corporation land" },
+        { "value": "trust", "label": "Alaska Mental Health Trust land" },
+        { "value": "private", "label": "Private land" },
+        { "value": "unknown", "label": "Not sure" }
+      ]
+    },
+    {
+      "id": "stage",
+      "type": "single",
+      "label": "Where is the project now?",
+      "options": [
+        { "value": "idea", "label": "Just an idea" },
+        { "value": "planned", "label": "In a community or agency plan" },
+        { "value": "designed", "label": "Route is scouted or designed" },
+        { "value": "permitted", "label": "Permits or agreements in hand" }
+      ]
+    },
+    {
+      "id": "match",
+      "type": "single",
+      "label": "Do you have local matching funds or in-kind support?",
+      "options": [
+        { "value": "yes", "label": "Yes" },
+        { "value": "partial", "label": "Some" },
+        { "value": "no", "label": "No" },
+        { "value": "unknown", "label": "Not sure" }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "key": "confirm-land",
+      "sortOrder": 1,
+      "title": "Confirm who owns and manages every piece of land the trail crosses",
+      "why": "The owner, the manager, and the office that approves a permit can be three different offices. A trail can be built with an access agreement even when the community does not own the land.",
+      "howTo": "Use the state recreation data hub to see who owns the land. Write down the owner and the manager for every section of the route. Ask each office what approval they require.",
+      "examples": null,
+      "topicSlugs": ["jurisdiction-land-management"],
+      "prerequisiteKeys": [],
+      "showIf": null,
+      "contactQuery": {
+        "topics": ["jurisdiction-land-management"],
+        "roleTypes": ["Landowner", "Land manager"],
+        "landTypes": true
+      },
+      "resourceTitles": ["State recreation data hub"]
+    },
+    {
+      "key": "check-plan",
+      "sortOrder": 2,
+      "title": "Check that the trail is in a current, signed community or agency plan",
+      "why": "A plan that partners have signed gives a project an edge when it applies for a grant.",
+      "howTo": "Find out whether the trail is already in a community or agency plan. If it is not, ask the planning lead what it would take to add it. Keep a copy of the signed plan with the application.",
+      "examples": "2023 Sitka Trail Plan. Wrangell's 2012 plan includes a signed partner agreement.",
+      "topicSlugs": ["planning-prioritization"],
+      "prerequisiteKeys": ["confirm-land"],
+      "showIf": { "q": "stage", "in": ["idea"] },
+      "contactQuery": {
+        "topics": ["planning-prioritization"],
+        "roleTypes": ["Plan author", "Plan partner"]
+      },
+      "resourceTitles": ["2023 Sitka Trail Plan (PDF)"]
+    },
+    {
+      "key": "approvals",
+      "sortOrder": 3,
+      "title": "List every approval the project needs, and who grants each one",
+      "why": "One trail can need 3–4 approvals. Some of them take a long time, so list them before choosing a grant.",
+      "howTo": "Write down each approval, the office that grants it, and how long it usually takes. DNR Mining, Land and Water easements can take years. DOT&PF permits work in a state highway right of way. ADF&G issues a fish habitat permit when a trail crosses a stream.",
+      "examples": null,
+      "topicSlugs": ["permitting-land-access", "governance"],
+      "prerequisiteKeys": ["confirm-land"],
+      "showIf": null,
+      "contactQuery": {
+        "topics": ["permitting-land-access"],
+        "roleTypes": ["Permit issuer"],
+        "landTypes": true
+      },
+      "resourceTitles": [
+        "DOT&PF right-of-way and permits",
+        "Fish habitat permit application (PDF)",
+        "Public access and RS 2477 trails"
+      ]
+    },
+    {
+      "key": "federal-review",
+      "sortOrder": 4,
+      "title": "Plan for federal environmental and historic-preservation review",
+      "why": "A Skagway trail on Forest Service land stalled while environmental review was unfinished. On the Tongass, design to construction can take more than five years.",
+      "howTo": "Ask the federal land manager whether the project needs environmental review and historic-preservation review. Start that review early. Build the wait into the project schedule.",
+      "examples": null,
+      "topicSlugs": ["permitting-land-access"],
+      "prerequisiteKeys": ["approvals"],
+      "showIf": {
+        "any": [
+          { "q": "landTypes", "includes": "usfs" },
+          { "q": "landTypes", "includes": "nps" }
+        ]
+      },
+      "contactQuery": {
+        "topics": ["permitting-land-access", "jurisdiction-land-management"],
+        "roleTypes": ["Permit issuer", "Land manager"],
+        "landTypes": true
+      },
+      "resourceTitles": []
+    },
+    {
+      "key": "wetlands",
+      "sortOrder": 5,
+      "title": "Ask the Army Corps of Engineers whether the route needs a wetlands permit",
+      "why": "Most Southeast trail routes cross muskeg. A wetlands permit can change the route, the cost, and the schedule.",
+      "howTo": "Ask the U.S. Army Corps of Engineers whether this route needs a wetlands permit. Contact them early, before the route is final.",
+      "examples": "Editor note: this step was added beyond the Trail Coordination Guide.",
+      "topicSlugs": ["permitting-land-access"],
+      "prerequisiteKeys": ["confirm-land"],
+      "showIf": { "q": "stage", "in": ["idea", "planned", "designed"] },
+      "contactQuery": null,
+      "resourceTitles": []
+    },
+    {
+      "key": "tribal-g2g",
+      "sortOrder": 6,
+      "title": "Start government-to-government contact with the Tribe",
+      "why": "Tribal governments have standing as governments. A lasting agreement serves a trail better than a one-time approval.",
+      "howTo": "Contact the Tribe whose land or citizens the trail affects, and ask how government-to-government consultation should start. Agree who will sign, and keep the agreement in writing.",
+      "examples": "Mendenhall co-stewardship is one example of a lasting agreement.",
+      "topicSlugs": ["jurisdiction-land-management", "governance"],
+      "prerequisiteKeys": ["confirm-land"],
+      "showIf": {
+        "any": [
+          { "q": "landTypes", "includes": "tribal" },
+          { "q": "landTypes", "includes": "corporation" }
+        ]
+      },
+      "contactQuery": {
+        "topics": ["jurisdiction-land-management", "governance"],
+        "roleTypes": ["Landowner", "Decision body"],
+        "landTypes": true
+      },
+      "resourceTitles": []
+    },
+    {
+      "key": "maintenance-owner",
+      "sortOrder": 7,
+      "title": "Name who will maintain, inspect and repair the trail, before you apply",
+      "why": "At the regional workshop, the strongest warning was that many trails have no one clearly responsible for maintenance. Funders will ask who fixes the trail after it is built.",
+      "howTo": "Name the organization that will maintain, inspect, and repair the trail. Write down what they will do and how it will be paid for. Get that commitment before you apply.",
+      "examples": "Wrangell has a standing maintenance contract with its Tribe.",
+      "topicSlugs": ["construction-maintenance"],
+      "prerequisiteKeys": [],
+      "showIf": null,
+      "contactQuery": {
+        "topics": ["construction-maintenance"],
+        "roleTypes": ["Maintenance owner"],
+        "landTypes": true
+      },
+      "resourceTitles": []
+    },
+    {
+      "key": "pick-program",
+      "sortOrder": 8,
+      "title": "Choose the funding program that fits",
+      "why": "Different programs pay for different kinds of work, and each one has its own rules.",
+      "howTo": "Compare programs before writing the application. Land and Water Conservation Fund grants are run by DNR and scored against the state recreation plan. The Multi-Use Trails Program is run by DOT&PF and has been open since October 1, 2025. Tribes can use the Tribal Transportation Program, including as match for other federal highway funds. The Federal Lands Access Program has funded work such as the Sitka Cross Trail. The Tongass Stewardship Fund can help pay for maintenance.",
+      "examples": "Sitka Cross Trail was funded through the Federal Lands Access Program.",
+      "topicSlugs": ["funding-grants"],
+      "prerequisiteKeys": ["check-plan"],
+      "showIf": null,
+      "contactQuery": {
+        "topics": ["funding-grants"],
+        "roleTypes": ["Funder", "Grant administrator"]
+      },
+      "resourceTitles": ["Multi-Use Trails Program", "Tongass Stewardship Fund: get involved"]
+    },
+    {
+      "key": "match",
+      "sortOrder": 9,
+      "title": "Line up your match",
+      "why": "Most construction grants require a local match. The Forest Service ended its match waiver, so do not count on that waiver.",
+      "howTo": "List cash, volunteer time, and other in-kind support you can document. Tribal Transportation Program funds can match other federal highway funds. Juneau and Trail Mix are examples of local capital support.",
+      "examples": null,
+      "topicSlugs": ["funding-grants"],
+      "prerequisiteKeys": ["pick-program"],
+      "showIf": { "q": "match", "in": ["no", "partial", "unknown"] },
+      "contactQuery": {
+        "topics": ["funding-grants"],
+        "roleTypes": ["Funder", "Applicant"]
+      },
+      "resourceTitles": []
+    },
+    {
+      "key": "evidence",
+      "sortOrder": 10,
+      "title": "Gather evidence of need: use counts, letters, safety data",
+      "why": "Grant reviewers look for proof that people need the trail.",
+      "howTo": "Gather use counts, letters, and safety notes. Skagway uses trail counters. DNR has a cell-data pilot. The Forest Service can share cabin occupancy data where it fits the project.",
+      "examples": null,
+      "topicSlugs": ["data-stewardship", "convening-coordinating"],
+      "prerequisiteKeys": [],
+      "showIf": null,
+      "contactQuery": {
+        "topics": ["data-stewardship"],
+        "roleTypes": ["Data steward"]
+      },
+      "resourceTitles": []
+    },
+    {
+      "key": "partners",
+      "sortOrder": 11,
+      "title": "Line up partners and letters of support",
+      "why": "Partners can write letters, hold a grant, or bring land and staff the community does not have.",
+      "howTo": "Ask each partner what they will do, and request letters of support. Sitka Trail Works and Trail Mix manage grants for their communities. Southeast Conference can act as a pass-through when a small community cannot hold the grant.",
+      "examples": null,
+      "topicSlugs": ["convening-coordinating"],
+      "prerequisiteKeys": [],
+      "showIf": null,
+      "contactQuery": {
+        "topics": ["convening-coordinating"],
+        "roleTypes": ["Convener", "Pass-through sponsor"]
+      },
+      "resourceTitles": []
+    },
+    {
+      "key": "apply",
+      "sortOrder": 12,
+      "title": "Assemble and submit the application",
+      "why": "A complete application says who owns the land, who will maintain the trail, which approvals are started, and how the match will be met.",
+      "howTo": "Finish the steps above, then assemble the application the program asks for. Export this checklist as a PDF and attach it. If you get stuck, contact Southeast Conference.",
+      "examples": null,
+      "topicSlugs": ["funding-grants"],
+      "prerequisiteKeys": [
+        "confirm-land",
+        "check-plan",
+        "approvals",
+        "federal-review",
+        "wetlands",
+        "tribal-g2g",
+        "maintenance-owner",
+        "pick-program",
+        "match",
+        "evidence",
+        "partners"
+      ],
+      "showIf": null,
+      "contactQuery": {
+        "topics": ["convening-coordinating"],
+        "roleTypes": ["Convener", "Pass-through sponsor"]
+      },
+      "resourceTitles": []
+    }
+  ]
+}

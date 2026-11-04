@@ -1,0 +1,7 @@
+dist
+node_modules
+coverage
+pnpm-lock.yaml
+apps/web/dist
+packages/db/prisma/migrations
+data/*.xlsx

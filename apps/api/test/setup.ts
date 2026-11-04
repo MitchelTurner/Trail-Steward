@@ -1,0 +1,9 @@
+process.env.NODE_ENV = 'test';
+process.env.DATABASE_URL = 'postgresql://trail:trail@127.0.0.1:5432/trail_steward_test';
+process.env.REDIS_URL = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
+process.env.JWT_SECRET = process.env.JWT_SECRET ?? 'test-jwt-secret-value';
+process.env.RESEND_API_KEY = 're_test_key';
+process.env.EMAIL_FROM = 'Trail Steward <noreply@example.com>';
+process.env.APP_BASE_URL = 'http://localhost:5173';
+process.env.API_BASE_URL = 'http://localhost:3000';
+process.env.TZ = 'America/Anchorage';
