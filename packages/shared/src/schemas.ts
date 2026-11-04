@@ -1,14 +1,19 @@
 import { z } from 'zod';
+import { lineStringSchema, pointSchema } from './geo';
+import { assetKinds, contentStatuses, orgKinds, userRoles, visibilities } from './kinds';
+
 export {
+  ASSET_KIND_LABELS,
   ORG_KIND_LABELS,
+  assetKinds,
   contentStatuses,
+  issueStatuses,
   linkStatuses,
   orgKinds,
   suggestionStatuses,
   userRoles,
   visibilities,
 } from './kinds';
-import { contentStatuses, orgKinds, userRoles, visibilities } from './kinds';
 
 export const pageQuerySchema = z.object({
   q: z.string().trim().optional(),
@@ -128,6 +133,36 @@ export const suggestionCreateSchema = z.object({
 export const suggestionResolveSchema = z.object({
   status: z.enum(['ACCEPTED', 'REJECTED']),
   resolutionNote: z.string().trim().max(2000).optional(),
+});
+
+export const trailWriteSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  summary: z.string().trim().max(4000).optional(),
+  status: z.enum(contentStatuses).optional(),
+  visibility: z.enum(visibilities).optional(),
+  line: lineStringSchema,
+  dataStewardOrgId: z.string().nullable().optional(),
+  maintenanceOwnerOrgId: z.string().nullable().optional(),
+  reviewIntervalDays: z.number().int().positive().max(3650).optional(),
+});
+
+export const assetWriteSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  kind: z.enum(assetKinds),
+  notes: z.string().trim().max(2000).optional(),
+  point: pointSchema,
+  reviewIntervalDays: z.number().int().positive().max(3650).optional(),
+});
+
+export const issueCreateSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  detail: z.string().trim().min(1).max(4000),
+  trailSlug: z.string().trim().max(200).optional(),
+  fax: z.string().optional(),
+});
+
+export const issueOwnerSchema = z.object({
+  organizationId: z.string().nullable(),
 });
 
 export const magicLinkSchema = z.object({

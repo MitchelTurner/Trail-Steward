@@ -11,6 +11,8 @@ import type {
   SessionUser,
   SuggestionRow,
 } from '../types';
+import { IssuesAdmin } from './IssuesAdmin';
+import { TrailForm, TrailsAdmin } from './TrailsAdmin';
 import { FreshnessBadge, Field, buttonClass, inputClass, kindLabel } from '../ui';
 
 function useMe() {
@@ -37,6 +39,8 @@ function Shell({ children }: { children: ReactNode }) {
         <NavLink to="/admin/orgs">Organizations</NavLink>
         <NavLink to="/admin/roles">Roles</NavLink>
         <NavLink to="/admin/resources">Resources</NavLink>
+        <NavLink to="/admin/trails">Trails</NavLink>
+        <NavLink to="/admin/issues">Issues</NavLink>
         <NavLink to="/admin/pathways/funding-application">Pathway</NavLink>
         <NavLink to="/admin/suggestions">Suggestions</NavLink>
         {role === 'COORDINATOR' || role === 'ADMIN' ? (
@@ -1047,6 +1051,10 @@ export function AdminApp() {
         <Route path="roles/:id" element={<RoleForm />} />
         <Route path="resources" element={<ResourcesAdmin />} />
         <Route path="resources/:id" element={<ResourceForm />} />
+        <Route path="trails" element={<TrailsAdmin />} />
+        <Route path="trails/new" element={<TrailForm />} />
+        <Route path="trails/edit/:slug" element={<TrailForm />} />
+        <Route path="issues" element={<IssuesAdmin />} />
         <Route path="pathways/:slug" element={<PathwayAdmin />} />
         <Route path="suggestions" element={<SuggestionsAdmin />} />
         <Route path="users" element={<UsersAdmin />} />

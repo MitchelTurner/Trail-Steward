@@ -28,9 +28,14 @@ export function HomePage() {
       <p className="text-xl text-navy">
         What do I need to do next to move my trail project forward, and who do I talk to?
       </p>
-      <Link to="/start/funding-application" className={`${buttonClass()} text-lg no-underline`}>
-        Start: prepare for a funding application
-      </Link>
+      <div className="flex flex-wrap gap-3">
+        <Link to="/start/funding-application" className={`${buttonClass()} text-lg no-underline`}>
+          Start: prepare for a funding application
+        </Link>
+        <Link to="/map" className={`${buttonClass('quiet')} text-lg no-underline`}>
+          See trails on the map
+        </Link>
+      </div>
       <form className="flex flex-col gap-2 sm:flex-row" action="/" method="get">
         <label className="flex-1">
           <span className="sr-only">Search</span>

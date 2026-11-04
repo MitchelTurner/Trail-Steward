@@ -75,13 +75,15 @@ export class ReviewReminderProcessor extends JobWorker {
 
   async process(): Promise<{ maintainers: number; coordinators: number }> {
     const now = new Date();
-    const [orgs, roles, resources, pathways, coordinators] = await Promise.all([
+    const [orgs, roles, resources, pathways, trails, assets, coordinators] = await Promise.all([
       this.prisma.organization.findMany({ include: { maintainer: true } }),
       this.prisma.playerRole.findMany({
         include: { maintainer: true, organization: true, topic: true },
       }),
       this.prisma.resource.findMany({ include: { maintainer: true } }),
       this.prisma.pathway.findMany({ include: { maintainer: true } }),
+      this.prisma.trail.findMany({ include: { maintainer: true } }),
+      this.prisma.asset.findMany({ include: { maintainer: true, trail: true } }),
       this.prisma.user.findMany({
         where: { isActive: true, role: { in: ['COORDINATOR', 'ADMIN'] } },
       }),
@@ -111,6 +113,18 @@ export class ReviewReminderProcessor extends JobWorker {
         freshness: freshness(pathway.reviewedAt, pathway.reviewIntervalDays, now),
         maintainerEmail: pathway.maintainer?.email ?? null,
         maintainerName: pathway.maintainer?.name ?? null,
+      })),
+      ...trails.map((trail) => ({
+        label: trail.name,
+        freshness: freshness(trail.reviewedAt, trail.reviewIntervalDays, now),
+        maintainerEmail: trail.maintainer?.email ?? null,
+        maintainerName: trail.maintainer?.name ?? null,
+      })),
+      ...assets.map((asset) => ({
+        label: `${asset.trail.name} — ${asset.name}`,
+        freshness: freshness(asset.reviewedAt, asset.reviewIntervalDays, now),
+        maintainerEmail: asset.maintainer?.email ?? null,
+        maintainerName: asset.maintainer?.name ?? null,
       })),
     ];
     const digests = maintainerDigest(items);

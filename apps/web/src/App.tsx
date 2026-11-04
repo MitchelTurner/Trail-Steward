@@ -24,6 +24,8 @@ const VerifyPage = lazy(() =>
   import('./pages/VerifyPage').then((mod) => ({ default: mod.VerifyPage })),
 );
 const AdminApp = lazy(() => import('./admin/AdminApp').then((mod) => ({ default: mod.AdminApp })));
+const MapPage = lazy(() => import('./pages/MapPage').then((mod) => ({ default: mod.MapPage })));
+const TrailPage = lazy(() => import('./pages/TrailPage').then((mod) => ({ default: mod.TrailPage })));
 
 export function App() {
   return (
@@ -34,6 +36,8 @@ export function App() {
           <Route path="/topics/:slug" element={<TopicPage />} />
           <Route path="/orgs" element={<OrgsPage />} />
           <Route path="/orgs/:slug" element={<OrgPage />} />
+          <Route path="/map" element={<MapPage />} />
+          <Route path="/trails/:slug" element={<TrailPage />} />
           <Route path="/start/:pathwaySlug" element={<StartPage />} />
           <Route path="/c/:token" element={<ChecklistPage />} />
           <Route path="/suggest" element={<SuggestPage />} />

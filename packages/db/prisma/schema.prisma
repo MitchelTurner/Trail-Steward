@@ -83,6 +83,9 @@ model Organization {
   members   User[]       @relation("OrgMembers")
   roles     PlayerRole[]
   resources Resource[]   @relation("ResourceOwner")
+  stewardedTrails  Trail[] @relation("TrailDataSteward")
+  maintainedTrails Trail[] @relation("TrailMaintenanceOwner")
+  ownedIssues      Issue[] @relation("IssueOwner")
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 }
@@ -272,6 +275,9 @@ model User {
   maintainedRoles     PlayerRole[]   @relation("RoleMaintainer")
   maintainedResources Resource[]     @relation("ResourceMaintainer")
   maintainedPathways  Pathway[]      @relation("PathwayMaintainer")
+  maintainedTrails    Trail[]        @relation("TrailMaintainer")
+  maintainedAssets    Asset[]        @relation("AssetMaintainer")
+  maintainedIssues    Issue[]        @relation("IssueMaintainer")
   resolvedSuggestions Suggestion[]   @relation("SuggestionResolver")
   createdAt           DateTime       @default(now())
 }
@@ -283,6 +289,86 @@ model MagicLinkToken {
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
+}
+
+enum AssetKind {
+  TRAILHEAD
+  BRIDGE
+  CULVERT
+  SIGN
+  OTHER
+}
+
+enum IssueStatus {
+  OPEN
+  CLOSED
+}
+
+/// A mapped trail. Geometry is also stored in PostGIS column `geom`.
+model Trail {
+  id      String        @id @default(cuid())
+  slug    String        @unique
+  name    String
+  summary String        @default("")
+  status  ContentStatus @default(DRAFT)
+  visibility Visibility @default(PUBLIC)
+  line    Json
+  // TODO(spec): the design doc did not fix the geometry type. A line in WGS84 is the simplest map shape.
+  geom    Unsupported("geometry(LineString, 4326)")?
+
+  dataStewardOrgId      String?
+  dataSteward           Organization? @relation("TrailDataSteward", fields: [dataStewardOrgId], references: [id])
+  maintenanceOwnerOrgId String?
+  maintenanceOwner      Organization? @relation("TrailMaintenanceOwner", fields: [maintenanceOwnerOrgId], references: [id])
+
+  maintainerId       String?
+  maintainer         User?     @relation("TrailMaintainer", fields: [maintainerId], references: [id])
+  reviewedAt         DateTime?
+  reviewIntervalDays Int       @default(365)
+
+  assets Asset[]
+  issues Issue[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Asset {
+  id      String    @id @default(cuid())
+  trailId String
+  trail   Trail     @relation(fields: [trailId], references: [id], onDelete: Cascade)
+  name    String
+  kind    AssetKind
+  notes   String?
+  point   Json
+  geom    Unsupported("geometry(Point, 4326)")?
+
+  maintainerId       String?
+  maintainer         User?     @relation("AssetMaintainer", fields: [maintainerId], references: [id])
+  reviewedAt         DateTime?
+  reviewIntervalDays Int       @default(365)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// A problem on the ground. ownerOrgId null means nobody owns it yet.
+model Issue {
+  id          String      @id @default(cuid())
+  title       String
+  detail      String
+  status      IssueStatus @default(OPEN)
+  trailId     String?
+  trail       Trail?      @relation(fields: [trailId], references: [id])
+  ownerOrgId  String?
+  ownerOrg    Organization? @relation("IssueOwner", fields: [ownerOrgId], references: [id])
+
+  maintainerId       String?
+  maintainer         User?     @relation("IssueMaintainer", fields: [maintainerId], references: [id])
+  reviewedAt         DateTime?
+  reviewIntervalDays Int       @default(90)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model AuditLog {

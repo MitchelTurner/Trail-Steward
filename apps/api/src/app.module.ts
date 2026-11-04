@@ -10,6 +10,7 @@ import { AuditModule } from './modules/audit.module';
 import { AuthModule } from './modules/auth.module';
 import { ChecklistsModule } from './modules/checklists.module';
 import { HealthModule } from './modules/health.module';
+import { IssuesModule } from './modules/issues.module';
 import { OrganizationsModule } from './modules/organizations.module';
 import { PathwaysModule } from './modules/pathways.module';
 import { PlayersModule } from './modules/players.module';
@@ -18,6 +19,7 @@ import { ReviewModule } from './modules/review.module';
 import { SearchModule } from './modules/search.module';
 import { SuggestionsModule } from './modules/suggestions.module';
 import { TopicsModule } from './modules/topics.module';
+import { TrailsModule } from './modules/trails.module';
 import { UsersModule } from './modules/users.module';
 import { AuditService } from './audit.service';
 import { EmailService } from './email.service';
@@ -74,6 +76,8 @@ export class CoreModule {}
     PlayersModule,
     ResourcesModule,
     PathwaysModule,
+    TrailsModule,
+    IssuesModule,
     ChecklistsModule,
     SuggestionsModule,
     AuthModule,
@@ -90,4 +94,4 @@ export class CoreModule {}
 })
 export class AppModule {}
 
-// Phase 2 reserved module names: trails, assets, change-requests, issues, workdays.
+// Later reserved module names: change-requests, workdays.

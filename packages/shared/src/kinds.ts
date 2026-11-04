@@ -20,6 +20,16 @@ export const contentStatuses = ['DRAFT', 'PUBLISHED', 'ARCHIVED'] as const;
 export const linkStatuses = ['UNCHECKED', 'OK', 'REDIRECT', 'BROKEN'] as const;
 export const suggestionStatuses = ['OPEN', 'ACCEPTED', 'REJECTED'] as const;
 export const visibilities = ['PUBLIC', 'PARTNERS', 'PRIVATE'] as const;
+export const assetKinds = ['TRAILHEAD', 'BRIDGE', 'CULVERT', 'SIGN', 'OTHER'] as const;
+export const issueStatuses = ['OPEN', 'CLOSED'] as const;
+
+export const ASSET_KIND_LABELS: Record<(typeof assetKinds)[number], string> = {
+  TRAILHEAD: 'Trailhead',
+  BRIDGE: 'Bridge',
+  CULVERT: 'Culvert',
+  SIGN: 'Sign',
+  OTHER: 'Other',
+};
 
 export const ORG_KIND_LABELS: Record<(typeof orgKinds)[number], string> = {
   FEDERAL: 'Federal',

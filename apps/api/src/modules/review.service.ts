@@ -5,7 +5,14 @@ import { AuditService } from '../audit.service';
 import { PrismaService } from '../prisma.service';
 import type { SessionUser } from '../session';
 
-export type ReviewEntity = 'organization' | 'playerRole' | 'resource' | 'pathway';
+export type ReviewEntity =
+  | 'organization'
+  | 'playerRole'
+  | 'resource'
+  | 'pathway'
+  | 'trail'
+  | 'asset'
+  | 'issue';
 
 type ReviewItem = {
   entityType: ReviewEntity;
@@ -70,7 +77,7 @@ export class ReviewService {
   }
 
   async dashboard() {
-    const [orgs, roles, resources, pathways, metrics] = await Promise.all([
+    const [orgs, roles, resources, pathways, trails, assets, issues, metrics] = await Promise.all([
       this.prisma.organization.findMany({
         include: { maintainer: true },
         orderBy: { name: 'asc' },
@@ -81,6 +88,15 @@ export class ReviewService {
       }),
       this.prisma.resource.findMany({ include: { maintainer: true }, orderBy: { title: 'asc' } }),
       this.prisma.pathway.findMany({ include: { maintainer: true }, orderBy: { title: 'asc' } }),
+      this.prisma.trail.findMany({ include: { maintainer: true }, orderBy: { name: 'asc' } }),
+      this.prisma.asset.findMany({
+        include: { maintainer: true, trail: true },
+        orderBy: { name: 'asc' },
+      }),
+      this.prisma.issue.findMany({
+        where: { ownerOrgId: null, status: 'OPEN' },
+        orderBy: { createdAt: 'desc' },
+      }),
       this.metrics(),
     ]);
 
@@ -134,9 +150,45 @@ export class ReviewService {
           maintainerName: pathway.maintainer?.name ?? null,
         })),
       ),
+      this.section(
+        'trails',
+        'Trails',
+        trails.map((trail) => ({
+          entityType: 'trail' as const,
+          id: trail.id,
+          label: trail.name,
+          freshness: freshness(trail.reviewedAt, trail.reviewIntervalDays),
+          maintainerId: trail.maintainerId,
+          maintainerName: trail.maintainer?.name ?? null,
+        })),
+      ),
+      this.section(
+        'assets',
+        'Map points',
+        assets.map((asset) => ({
+          entityType: 'asset' as const,
+          id: asset.id,
+          label: `${asset.trail.name} — ${asset.name}`,
+          freshness: freshness(asset.reviewedAt, asset.reviewIntervalDays),
+          maintainerId: asset.maintainerId,
+          maintainerName: asset.maintainer?.name ?? null,
+        })),
+      ),
+      this.section(
+        'issues',
+        'Unowned issues',
+        issues.map((issue) => ({
+          entityType: 'issue' as const,
+          id: issue.id,
+          label: issue.title,
+          freshness: freshness(issue.reviewedAt, issue.reviewIntervalDays),
+          maintainerId: issue.maintainerId,
+          maintainerName: null,
+        })),
+      ),
     ];
 
-    // Phase 2 can append trails, change requests, and unowned issues as more sections.
+    // Change requests can be appended as another section.
     return {
       sections,
       brokenLinks: resources
@@ -206,7 +258,13 @@ export class ReviewService {
           ? await this.prisma.playerRole.findUnique({ where: { id } })
           : entity === 'resource'
             ? await this.prisma.resource.findUnique({ where: { id } })
-            : await this.prisma.pathway.findUnique({ where: { id } });
+            : entity === 'pathway'
+              ? await this.prisma.pathway.findUnique({ where: { id } })
+              : entity === 'trail'
+                ? await this.prisma.trail.findUnique({ where: { id } })
+                : entity === 'asset'
+                  ? await this.prisma.asset.findUnique({ where: { id } })
+                  : await this.prisma.issue.findUnique({ where: { id } });
     if (!row) throw new NotFoundException('Record not found.');
     return row;
   }
@@ -216,7 +274,10 @@ export class ReviewService {
     if (entity === 'organization') await this.prisma.organization.update({ where: { id }, data });
     else if (entity === 'playerRole') await this.prisma.playerRole.update({ where: { id }, data });
     else if (entity === 'resource') await this.prisma.resource.update({ where: { id }, data });
-    else await this.prisma.pathway.update({ where: { id }, data });
+    else if (entity === 'pathway') await this.prisma.pathway.update({ where: { id }, data });
+    else if (entity === 'trail') await this.prisma.trail.update({ where: { id }, data });
+    else if (entity === 'asset') await this.prisma.asset.update({ where: { id }, data });
+    else await this.prisma.issue.update({ where: { id }, data });
   }
 
   private async writeMaintainer(entity: ReviewEntity, id: string, maintainerId: string | null) {
@@ -224,6 +285,9 @@ export class ReviewService {
     if (entity === 'organization') await this.prisma.organization.update({ where: { id }, data });
     else if (entity === 'playerRole') await this.prisma.playerRole.update({ where: { id }, data });
     else if (entity === 'resource') await this.prisma.resource.update({ where: { id }, data });
-    else await this.prisma.pathway.update({ where: { id }, data });
+    else if (entity === 'pathway') await this.prisma.pathway.update({ where: { id }, data });
+    else if (entity === 'trail') await this.prisma.trail.update({ where: { id }, data });
+    else if (entity === 'asset') await this.prisma.asset.update({ where: { id }, data });
+    else await this.prisma.issue.update({ where: { id }, data });
   }
 }

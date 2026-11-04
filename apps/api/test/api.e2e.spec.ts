@@ -61,6 +61,9 @@ describe('API', () => {
     prisma = new PrismaClient();
     await prisma.$executeRawUnsafe(`
       TRUNCATE TABLE
+        "Issue",
+        "Asset",
+        "Trail",
         "AuditLog",
         "Suggestion",
         "Checklist",
@@ -385,5 +388,80 @@ describe('API', () => {
     expect(queued.body.id).toBeTruthy();
     const job = await admin.get(`/api/admin/jobs/${queued.body.id}`).expect(200);
     expect(['waiting', 'delayed', 'active', 'completed', 'failed']).toContain(job.body.state);
+  });
+
+  it('publishes a trail, filters it by map box, and keeps drafts off the public map', async () => {
+    const org = await prisma.organization.findFirst({ where: { status: 'PUBLISHED' } });
+    const created = await editor
+      .post('/api/trails')
+      .send({
+        name: 'Harbor path',
+        summary: 'A short path by the harbor.',
+        status: 'PUBLISHED',
+        visibility: 'PUBLIC',
+        line: {
+          type: 'LineString',
+          coordinates: [
+            [-135.33, 57.05],
+            [-135.2, 57.08],
+          ],
+        },
+        dataStewardOrgId: org?.id,
+      })
+      .expect(201);
+    expect(created.body.slug).toBe('harbor-path');
+    expect(created.body.line.coordinates).toHaveLength(2);
+    const withPoint = await editor.post('/api/trails/harbor-path/assets').send({
+      name: 'Harbor bridge',
+      kind: 'BRIDGE',
+      point: { type: 'Point', coordinates: [-135.3, 57.06] },
+    });
+    expect(withPoint.status).toBe(201);
+    expect(withPoint.body.assets).toHaveLength(1);
+
+    const pub = await request(app.getHttpServer()).get('/api/trails').expect(200);
+    expect(pub.body.items.some((item: { slug: string }) => item.slug === 'harbor-path')).toBe(true);
+    const inside = await request(app.getHttpServer())
+      .get('/api/trails')
+      .query({ west: -136, south: 57, east: -135, north: 58 })
+      .expect(200);
+    expect(inside.body.items.some((item: { slug: string }) => item.slug === 'harbor-path')).toBe(true);
+    const outside = await request(app.getHttpServer())
+      .get('/api/trails')
+      .query({ west: -120, south: 40, east: -119, north: 41 })
+      .expect(200);
+    expect(outside.body.items.some((item: { slug: string }) => item.slug === 'harbor-path')).toBe(false);
+
+    await editor
+      .post('/api/trails')
+      .send({
+        name: 'Hidden path',
+        status: 'DRAFT',
+        line: {
+          type: 'LineString',
+          coordinates: [
+            [-135.1, 57.01],
+            [-135.0, 57.02],
+          ],
+        },
+      })
+      .expect(201);
+    const hidden = await request(app.getHttpServer()).get('/api/trails/hidden-path').expect(404);
+    expect(hidden.body.message).toBeTruthy();
+    const managed = await editor.get('/api/trails/hidden-path').expect(200);
+    expect(managed.body.status).toBe('DRAFT');
+
+    const report = await request(app.getHttpServer())
+      .post('/api/issues')
+      .send({ title: 'Washout', detail: 'The bridge approach is gone.', trailSlug: 'harbor-path' })
+      .expect(201);
+    expect(report.body.ok).toBe(true);
+    const listed = await editor.get('/api/issues').expect(200);
+    expect(listed.body.items.some((item: { title: string }) => item.title === 'Washout')).toBe(true);
+    const dashboard = await coordinator.get('/api/review/dashboard').expect(200);
+    const issues = dashboard.body.sections.find(
+      (section: { key: string }) => section.key === 'issues',
+    );
+    expect(issues.items.some((item: { label: string }) => item.label === 'Washout')).toBe(true);
   });
 });

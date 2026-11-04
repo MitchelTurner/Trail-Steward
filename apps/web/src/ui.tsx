@@ -57,6 +57,9 @@ export function Layout({ children }: { children: ReactNode }) {
             Trail Steward
           </Link>
           <nav className="flex flex-wrap gap-3 text-sm">
+            <NavLink to="/map" className="text-white">
+              Map
+            </NavLink>
             <NavLink to="/orgs" className="text-white">
               Directory
             </NavLink>

@@ -1,8 +1,14 @@
-# Trail Steward — Phase 1
+# Trail Steward
 
-Planning navigator pilot. Later phases (maps, maintenance, counters, repair packets) are not built. The schema keeps `Organization` as the owner directory, `freshness()` is generic, and the review dashboard is a list of sections so those modules can be added later.
+Phase 1 is the planning navigator. Phase 2 adds the trail map: a trail line, places on that line, and a public report when something is wrong. Counters, workdays, repair packets, change requests, and file storage are still later. The design doc did not spell those out, so they are not invented here.
 
-PostGIS is enabled in the first migration and unused. `apps/web/src/features/map/` is reserved.
+`Organization` stays the owner directory. A trail points at it with `dataStewardOrgId` and `maintenanceOwnerOrgId`. `freshness()` covers trails and places. The review dashboard adds sections for trails, map points, and issues that have no owner.
+
+## Map
+
+A trail is a line of longitude, latitude pairs. A place on a trail is a point: trailhead, bridge, culvert, sign, or other. PostGIS stores the same shape so the map can ask which trails cross a box. The public map is a drawing of those lines, not a street basemap.
+
+Published public trails show on `/map` and `/trails/:slug`. Drafts stay in the editor. Anyone can report a problem. The report lands as an unowned issue until an editor names an organization or closes it.
 
 ## What it does
 

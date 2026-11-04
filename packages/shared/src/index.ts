@@ -6,3 +6,4 @@ export * from './steps';
 export * from './slug';
 export * from './plain';
 export * from './schemas';
+export * from './geo';

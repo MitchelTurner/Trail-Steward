@@ -13,8 +13,13 @@ import {
   resourceWriteSchema,
   roleWriteSchema,
   stepWriteSchema,
+  assetWriteSchema,
+  issueCreateSchema,
+  issueOwnerSchema,
+  issueStatuses,
   suggestionCreateSchema,
   suggestionResolveSchema,
+  trailWriteSchema,
   suggestionStatuses,
   userPatchSchema,
   userWriteSchema,
@@ -71,3 +76,22 @@ export class MagicLinkDto extends createZodDto(magicLinkSchema) {}
 export class VerifyDto extends createZodDto(verifySchema) {}
 export class UserWriteDto extends createZodDto(userWriteSchema) {}
 export class UserPatchDto extends createZodDto(userPatchSchema) {}
+export class TrailListDto extends createZodDto(
+  pageQuerySchema.extend({
+    scope,
+    west: z.coerce.number().optional(),
+    south: z.coerce.number().optional(),
+    east: z.coerce.number().optional(),
+    north: z.coerce.number().optional(),
+  }),
+) {}
+export class TrailWriteDto extends createZodDto(trailWriteSchema) {}
+export class TrailPatchDto extends createZodDto(trailWriteSchema.partial()) {}
+export class AssetWriteDto extends createZodDto(assetWriteSchema) {}
+export class IssueCreateDto extends createZodDto(issueCreateSchema) {}
+export class IssueListDto extends createZodDto(
+  pageQuerySchema.extend({
+    status: z.enum(issueStatuses).optional(),
+  }),
+) {}
+export class IssueOwnerDto extends createZodDto(issueOwnerSchema) {}
