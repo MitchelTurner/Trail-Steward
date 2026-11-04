@@ -35,6 +35,14 @@ function presentOrg(
     shortName: org.shortName,
     kind: org.kind,
     websiteUrl: org.websiteUrl,
+    linkStatus: org.linkStatus,
+    ...(detailed
+      ? {
+          linkCheckedAt: org.linkCheckedAt?.toISOString() ?? null,
+          linkFinalUrl: org.linkFinalUrl,
+          linkHttpStatus: org.linkHttpStatus,
+        }
+      : {}),
     description: org.description,
     communities: org.communities,
     isGroup: org.isGroup,
@@ -203,6 +211,8 @@ export class OrganizationsController {
       include: orgInclude,
     });
     if (!existing) throw new NotFoundException('Organization not found.');
+    const nextWebsite = body.websiteUrl === undefined ? undefined : blankToNull(body.websiteUrl);
+    const websiteChanged = nextWebsite !== undefined && nextWebsite !== existing.websiteUrl;
     try {
       const updated = await this.prisma.organization.update({
         where: { id },
@@ -211,7 +221,15 @@ export class OrganizationsController {
           slug: body.slug ? slugify(body.slug) : undefined,
           shortName: blankToNull(body.shortName),
           kind: body.kind,
-          websiteUrl: blankToNull(body.websiteUrl),
+          websiteUrl: nextWebsite,
+          ...(websiteChanged
+            ? {
+                linkStatus: 'UNCHECKED',
+                linkCheckedAt: null,
+                linkFinalUrl: null,
+                linkHttpStatus: null,
+              }
+            : {}),
           description: blankToNull(body.description),
           communities: body.communities,
           isGroup: body.isGroup,

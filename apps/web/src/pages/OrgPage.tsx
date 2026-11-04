@@ -26,8 +26,9 @@ export function OrgPage() {
       <p className="text-sm text-muted">{kindLabel(data.kind)}</p>
       {data.description ? <p>{data.description}</p> : null}
       {data.websiteUrl ? (
-        <p>
+        <p className="flex flex-wrap items-center gap-2">
           <a href={data.websiteUrl}>Website</a>
+          <LinkStatus status={data.linkStatus} />
         </p>
       ) : null}
       {data.contactName || data.contactEmail || data.contactPhone ? (

@@ -122,6 +122,7 @@ export class ReviewService {
           freshness: freshness(org.reviewedAt, org.reviewIntervalDays),
           maintainerId: org.maintainerId,
           maintainerName: org.maintainer?.name ?? null,
+          linkStatus: org.linkStatus,
         })),
       ),
       this.section(
@@ -231,16 +232,28 @@ export class ReviewService {
     ];
     return {
       sections,
-      brokenLinks: resources
-        .filter((resource) => resource.linkStatus === 'BROKEN')
-        .map((resource) => ({
-          entityType: 'resource' as const,
-          id: resource.id,
-          label: resource.title,
-          url: resource.url,
-          linkStatus: resource.linkStatus,
-          maintainerName: resource.maintainer?.name ?? null,
-        })),
+      brokenLinks: [
+        ...orgs
+          .filter((org) => org.linkStatus === 'BROKEN' && org.websiteUrl)
+          .map((org) => ({
+            entityType: 'organization' as const,
+            id: org.id,
+            label: org.name,
+            url: org.websiteUrl ?? '',
+            linkStatus: org.linkStatus,
+            maintainerName: org.maintainer?.name ?? null,
+          })),
+        ...resources
+          .filter((resource) => resource.linkStatus === 'BROKEN')
+          .map((resource) => ({
+            entityType: 'resource' as const,
+            id: resource.id,
+            label: resource.title,
+            url: resource.url,
+            linkStatus: resource.linkStatus,
+            maintainerName: resource.maintainer?.name ?? null,
+          })),
+      ],
       metrics,
     };
   }

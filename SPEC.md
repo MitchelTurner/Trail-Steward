@@ -1,6 +1,6 @@
 # Trail Steward
 
-Phase 1 is the planning navigator. Phase 2 adds the trail map. Phase 3 is the maintenance board. Phase 4 adds trail counters. Phase 5 stores a PDF or photo on a trail. Phase 6 saves a work packet. The design doc did not name an object store, so the file bytes live in Postgres.
+Phase 1 is the planning navigator. Phase 2 adds the trail map. Phase 3 is the maintenance board. Phase 4 adds trail counters. Phase 5 stores a PDF or photo on a trail. Phase 6 saves a work packet. Phase 7 stores the Monday check of each organization's website. The design doc did not name an object store, so the file bytes live in Postgres.
 
 `Organization` stays the owner directory. A trail points at it with `dataStewardOrgId` and `maintenanceOwnerOrgId`. `freshness()` covers trails and places. The review dashboard adds sections for trails, map points, and issues that have no owner.
 
@@ -65,4 +65,4 @@ An editor can mark a record reviewed only when they are its maintainer, or when 
 - `checklist-cleanup`: monthly. Deletes checklists not opened for 18 months.
 - `import-guide`: on demand from the admin upload. The workbook is still carried in the job.
 
-Organization websites are checked and logged. The schema has no link-status columns for them.
+The Monday link check stores a status on each organization website: not checked, ok, redirects, or broken. A broken website shows on the organization page, in the review dashboard's broken links, and in the Monday reminder. Changing the website address clears that status. Resource links are checked the same way.

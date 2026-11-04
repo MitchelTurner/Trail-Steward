@@ -134,6 +134,7 @@ test('the directory opens an organization', async ({ page }) => {
   await page.goto('/orgs');
   await page.getByRole('link', { name: 'USDA Forest Service' }).click();
   await expect(page.getByRole('heading', { name: 'USDA Forest Service' })).toBeVisible();
+  await expect(page.getByText('Link broken')).toBeVisible();
   const fits = await page.evaluate(
     () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
   );

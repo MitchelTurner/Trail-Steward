@@ -44,12 +44,15 @@ export class LinkCheckProcessor extends JobWorker {
       });
       return outcome.linkStatus;
     });
-    // TODO(spec): organizations have no link-status columns. Websites are checked and logged only.
     const orgResults = await mapPool(
       orgs.filter((org): org is { id: string; websiteUrl: string } => Boolean(org.websiteUrl)),
       4,
       async (org) => {
         const outcome = await checkUrl(org.websiteUrl);
+        await this.prisma.organization.update({
+          where: { id: org.id },
+          data: { ...outcome, linkCheckedAt: checkedAt },
+        });
         return { id: org.id, ...outcome };
       },
     );
@@ -95,6 +98,7 @@ export class ReviewReminderProcessor extends JobWorker {
         freshness: freshness(org.reviewedAt, org.reviewIntervalDays, now),
         maintainerEmail: org.maintainer?.email ?? null,
         maintainerName: org.maintainer?.name ?? null,
+        linkStatus: org.linkStatus,
       })),
       ...roles.map((role) => ({
         label: `${role.organization.name} — ${role.topic.name}`,

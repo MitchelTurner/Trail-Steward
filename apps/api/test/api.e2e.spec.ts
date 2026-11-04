@@ -587,6 +587,40 @@ describe('API', () => {
     expect(Buffer.compare(downloaded.body as Buffer, png)).toBe(0);
   });
 
+  it('stores a broken organization website and clears it when the address changes', async () => {
+    const org = await prisma.organization.findUnique({ where: { slug: 'usda-forest-service' } });
+    if (!org?.websiteUrl) throw new Error('USDA Forest Service needs a website.');
+    await prisma.organization.update({
+      where: { id: org.id },
+      data: {
+        linkStatus: 'BROKEN',
+        linkCheckedAt: new Date('2026-11-02T00:00:00.000Z'),
+        linkHttpStatus: 404,
+        linkFinalUrl: org.websiteUrl,
+      },
+    });
+    const pub = await request(app.getHttpServer())
+      .get('/api/organizations/usda-forest-service')
+      .expect(200);
+    expect(pub.body.linkStatus).toBe('BROKEN');
+    expect(pub.body.linkHttpStatus).toBeUndefined();
+    const dashboard = await coordinator.get('/api/review/dashboard').expect(200);
+    expect(
+      dashboard.body.brokenLinks.some((item: { label: string }) => item.label === 'USDA Forest Service'),
+    ).toBe(true);
+    const changed = await editor
+      .patch(`/api/organizations/${org.id}`)
+      .send({ websiteUrl: 'https://example.com/forest' })
+      .expect(200);
+    expect(changed.body.websiteUrl).toBe('https://example.com/forest');
+    expect(changed.body.linkStatus).toBe('UNCHECKED');
+    expect(changed.body.linkHttpStatus).toBeNull();
+    const after = await coordinator.get('/api/review/dashboard').expect(200);
+    expect(
+      after.body.brokenLinks.some((item: { label: string }) => item.label === 'USDA Forest Service'),
+    ).toBe(false);
+  });
+
   it('saves a work packet and prints only the chosen problem', async () => {
     await request(app.getHttpServer())
       .post('/api/issues')

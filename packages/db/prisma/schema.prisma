@@ -66,6 +66,11 @@ model Organization {
   shortName    String?
   kind         OrgKind
   websiteUrl   String?
+  // TODO(spec): the design doc checked organization websites and did not store a status. Use the same status as a resource link.
+  linkStatus     LinkStatus @default(UNCHECKED)
+  linkCheckedAt  DateTime?
+  linkFinalUrl   String?
+  linkHttpStatus Int?
   description  String?
   communities  String[]
   isGroup      Boolean    @default(false)

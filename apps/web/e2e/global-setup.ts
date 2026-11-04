@@ -98,6 +98,9 @@ DELETE FROM "MagicLinkToken" WHERE email = 'map-editor@example.com';
 INSERT INTO "MagicLinkToken" (id, email, "tokenHash", "expiresAt", "createdAt")
 VALUES ('seedmaptoken', 'map-editor@example.com', '${editorTokenHash}', NOW() + INTERVAL '1 day', NOW());
 DELETE FROM "Trail" WHERE slug LIKE 'playwright-creek%';
+UPDATE "Organization"
+SET "linkStatus" = 'BROKEN', "linkCheckedAt" = NOW(), "linkHttpStatus" = 404, "linkFinalUrl" = "websiteUrl"
+WHERE slug = 'usda-forest-service';
 SQL`,
     { cwd: root, stdio: 'inherit' },
   );

@@ -2,7 +2,7 @@
 
 Trail Steward helps Southeast Alaska communities see what to do next on a trail project, and who to talk to.
 
-Phase 1 is the planning navigator: a directory of organizations from Southeast Conference's Trail Coordination Guide, one guided pathway for preparing a funding application, saved checklists with a private link and a PDF, and a review queue for editors. The map adds published trail lines, places on those trails, and a public problem report. The maintenance board adds planned work days, map-change requests, and a PDF work list. Counters record how many visits a trail counter showed on a date. Editors can attach a PDF or a photo to a trail, and save a work packet that prints only the problems, work days, and files they chose.
+Phase 1 is the planning navigator: a directory of organizations from Southeast Conference's Trail Coordination Guide, one guided pathway for preparing a funding application, saved checklists with a private link and a PDF, and a review queue for editors. The map adds published trail lines, places on those trails, and a public problem report. The maintenance board adds planned work days, map-change requests, and a PDF work list. Counters record how many visits a trail counter showed on a date. Editors can attach a PDF or a photo to a trail, and save a work packet that prints only the problems, work days, and files they chose. The Monday link check stores whether each organization's website is ok, redirecting, or broken.
 
 ## Run it locally
 

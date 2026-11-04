@@ -280,6 +280,14 @@ async function upsertOrg(tx: Tx, org: GuideOrg, summary: ImportSummary): Promise
       kind,
       websiteUrl: org.websiteUrl,
       isGroup: org.isGroup,
+      ...(existing.websiteUrl !== org.websiteUrl
+        ? {
+            linkStatus: 'UNCHECKED' as const,
+            linkCheckedAt: null,
+            linkFinalUrl: null,
+            linkHttpStatus: null,
+          }
+        : {}),
     },
   });
   bump(summary.updated, 'organizations');

@@ -15,7 +15,7 @@ import { BoardAdmin } from './BoardAdmin';
 import { ChangeRequestsAdmin } from './ChangeRequestsAdmin';
 import { IssuesAdmin } from './IssuesAdmin';
 import { TrailForm, TrailsAdmin } from './TrailsAdmin';
-import { FreshnessBadge, Field, buttonClass, inputClass, kindLabel } from '../ui';
+import { FreshnessBadge, Field, LinkStatus, buttonClass, inputClass, kindLabel } from '../ui';
 
 function useMe() {
   return useQuery({
@@ -389,6 +389,11 @@ function OrgForm() {
           onChange={(event) => setForm({ ...form, websiteUrl: event.target.value })}
         />
       </Field>
+      {existing.data?.websiteUrl ? (
+        <p className="text-sm">
+          Link: <LinkStatus status={existing.data.linkStatus} />
+        </p>
+      ) : null}
       <Field label="Description">
         <textarea
           className={inputClass}

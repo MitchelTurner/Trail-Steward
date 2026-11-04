@@ -63,6 +63,7 @@ export type OrgListItem = {
   shortName: string | null;
   kind: string;
   websiteUrl: string | null;
+  linkStatus: string;
   description: string | null;
   communities: string[];
   isGroup: boolean;
